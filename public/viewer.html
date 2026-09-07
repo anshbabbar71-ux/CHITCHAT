@@ -1,0 +1,29 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stream Support</title><style>
+*{box-sizing:border-box}body{margin:0;background:#0d0d10;color:#fff;font-family:Arial,sans-serif;padding:26px}.wrap{max-width:980px;margin:auto}
+h1{margin:0}.sub{opacity:.65;margin:8px 0 22px}.box{background:#18181d;border:1px solid #303038;border-radius:18px;padding:18px;margin:14px 0}
+input,textarea{width:100%;background:#0d0d11;color:#fff;border:1px solid #3a3a44;border-radius:11px;padding:12px;font-size:15px}textarea{min-height:105px}
+.row{display:flex;justify-content:space-between;gap:12px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:11px;margin-top:12px}
+.card{background:#101014;border:1px solid #34343d;border-radius:13px;padding:11px;cursor:pointer;overflow:hidden}.card.sel{outline:2px solid #fff}.pill{opacity:.75;font-size:12px;margin-top:5px}
+.card audio,.card video{width:100%;margin-top:8px}.card video{height:105px;object-fit:cover;background:#000}.sticky{position:sticky;bottom:10px;background:#1b1b21eF;border:1px solid #444;border-radius:15px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+button{border:0;border-radius:11px;padding:12px 18px;font-weight:800;cursor:pointer}.search{margin-top:10px}
+@media(max-width:600px){body{padding:14px}.sticky{flex-direction:column;align-items:stretch}}
+</style></head><body><div class="wrap"><h1 id="title">Support Creator 🎮</h1><div class="sub">Send a message, sound or meme to the stream.</div>
+<div class="box"><b>👤 Your name</b><div class="row"><span></span><small id="nc">0/30</small></div><input id="name" maxlength="30" placeholder="Viewer123"></div>
+<div class="box"><b>💬 Your message</b><div class="row"><span>Longer message = higher price</span><small id="mc">0/200</small></div><textarea id="msg" maxlength="200" placeholder="Type your stream message..."></textarea><div class="row" style="margin-top:10px"><b>Message price</b><b id="mp">₹0</b></div></div>
+<div class="box"><b>🔊 Soundboard</b><div class="sub">Creator ne jo sounds ON kiye hain wahi yahan dikhte hain.</div><input class="search" id="soundSearch" placeholder="Search sounds..."><div class="grid" id="sounds"></div></div>
+<div class="box"><b>😂 Memes / GIFs</b><div class="sub">Preview karo, phir select karo.</div><input class="search" id="memeSearch" placeholder="Search memes..."><div class="grid" id="memes"></div></div>
+<div class="sticky"><div><b style="font-size:21px">Total: <span id="total">₹0</span></b><div id="break" style="opacity:.65;font-size:12px;margin-top:4px"></div></div><button id="send">PAY / SEND TEST</button></div>
+</div><script>
+const parts=location.pathname.split("/").filter(Boolean);const slug=parts[1]||parts[0]||"ansh";let C,ss="",sm="",sp=0,gp=0;
+const $=id=>document.getElementById(id), n=$("name"),m=$("msg");
+function msgPrice(){let l=m.value.length;if(!l)return 0;for(const t of C.messageTiers)if(l<=t.max)return t.price;return C.messageTiers.at(-1).price}
+function update(){ $("nc").textContent=n.value.length+"/30";$("mc").textContent=m.value.length+"/200";let p=msgPrice();$("mp").textContent="₹"+p;$("total").textContent="₹"+(p+sp+gp);$("break").textContent=`Message ₹${p} + Sound ₹${sp} + Meme ₹${gp}` }
+function soundCard(x){let d=document.createElement("div");d.className="card"+(ss===x.id?" sel":"");d.innerHTML=`<b>${x.name}</b><div class="pill">₹${x.price}</div><audio controls preload="none" src="${x.file}"></audio>`;d.onclick=e=>{if(e.target.tagName==="AUDIO")return;ss=ss===x.id?"":x.id;sp=ss?x.price:0;renderSounds();update()};return d}
+function memeCard(x){let d=document.createElement("div");d.className="card"+(sm===x.id?" sel":"");let ext=x.file.split(".").pop().toLowerCase();d.innerHTML=`<b>${x.name}</b><div class="pill">₹${x.price}</div>${ext==="gif"?`<img src="${x.file}" style="width:100%;height:105px;object-fit:cover;margin-top:8px">`:`<video controls muted loop preload="metadata" src="${x.file}"></video>`}`;d.onclick=e=>{if(["VIDEO","IMG"].includes(e.target.tagName))return;sm=sm===x.id?"":x.id;gp=sm?x.price:0;renderMemes();update()};return d}
+function renderSounds(){let q=$("soundSearch").value.toLowerCase(),g=$("sounds");g.innerHTML="";C.sounds.filter(x=>x.enabled&&x.name.toLowerCase().includes(q)).forEach(x=>g.appendChild(soundCard(x)))}
+function renderMemes(){let q=$("memeSearch").value.toLowerCase(),g=$("memes");g.innerHTML="";C.memes.filter(x=>x.enabled&&x.name.toLowerCase().includes(q)).forEach(x=>g.appendChild(memeCard(x)))}
+async function boot(){C=await fetch("/api/creator/"+slug).then(r=>r.json());$("title").textContent="Support "+C.displayName+" 🎮";renderSounds();renderMemes();update()}
+[n,m].forEach(x=>x.addEventListener("input",update));$("soundSearch").oninput=renderSounds;$("memeSearch").oninput=renderMemes;
+$("send").onclick=async()=>{if(!n.value.trim()||!m.value.trim())return alert("Name aur message likho bhai 😭");let amount=msgPrice()+sp+gp;await fetch("/api/test-payment/"+slug,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n.value,message:m.value,soundId:ss,memeId:sm,amount})});alert("Test alert sent to OBS 🔥")};boot();
+</script></body></html>

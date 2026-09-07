@@ -1,0 +1,349 @@
+{
+  "creators": [
+    {
+      "id": "creator-ansh",
+      "slug": "ansh",
+      "displayName": "Ansh",
+      "currency": "INR",
+      "messageTiers": [
+        {
+          "max": 50,
+          "price": 20
+        },
+        {
+          "max": 100,
+          "price": 40
+        },
+        {
+          "max": 150,
+          "price": 70
+        },
+        {
+          "max": 200,
+          "price": 100
+        }
+      ],
+      "sounds": [
+        {
+          "id": "s1",
+          "name": "Aayein Meme",
+          "file": "/media/aayein-meme.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s2",
+          "name": "Among Us Role Reveal Sound",
+          "file": "/media/among-us-role-reveal-sound.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s3",
+          "name": "Anime Ahh",
+          "file": "/media/anime-ahh.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s4",
+          "name": "Anime Wow",
+          "file": "/media/anime-wow-sound-effect.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s5",
+          "name": "Chachaa",
+          "file": "/media/chachaa.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s6",
+          "name": "Chicken On Tree Screaming",
+          "file": "/media/chicken-on-tree-screaming.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s7",
+          "name": "Cid Le Mdc 1",
+          "file": "/media/cid-le-mdc -1-.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s8",
+          "name": "Cid",
+          "file": "/media/cid.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s9",
+          "name": "Depression Indian",
+          "file": "/media/depression-indian.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s10",
+          "name": "Du Bist Gut Genug",
+          "file": "/media/du-bist-gut-genug.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s11",
+          "name": "Ek Jhaat Bhar Ka Aadmi",
+          "file": "/media/ek-jhaat-bhar-ka-aadmi.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s12",
+          "name": "Fahhh Kcgaxfs",
+          "file": "/media/fahhh_KcgAXfs.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s13",
+          "name": "Fahhhhhhhhhhhhhh",
+          "file": "/media/fahhhhhhhhhhhhhh.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s14",
+          "name": "Gopgopgop",
+          "file": "/media/gopgopgop.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s15",
+          "name": "Jo Gareeb Hove Naa",
+          "file": "/media/jo-gareeb-hove-naa.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s16",
+          "name": "Kuchu Puchu Tum Kaha Ho",
+          "file": "/media/kuchu-puchu-tum-kaha-ho.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s17",
+          "name": "Kyu Re Madarchod Cid",
+          "file": "/media/kyu-re-madarchod-cid.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s18",
+          "name": "Modi Ji Bhojyam",
+          "file": "/media/modi-ji-bhojyam.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s19",
+          "name": "Nahi Nahi Saluke Yaha Kuchh To Gadbad Hai",
+          "file": "/media/nahi-nahi-saluke-yaha-kuchh-to-gadbad-hai.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s20",
+          "name": "Ny Video",
+          "file": "/media/ny-video-online-audio-converter.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s21",
+          "name": "Raja Gujjar",
+          "file": "/media/raja-gujjar.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s22",
+          "name": "Rizz",
+          "file": "/media/rizz-sound-effect.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s23",
+          "name": "Rom Rom Bhaiyo",
+          "file": "/media/rom-rom-bhaiyo.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s24",
+          "name": "Romanceeeeeeeeeeeeee",
+          "file": "/media/romanceeeeeeeeeeeeee.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s25",
+          "name": "Sad Meow Song",
+          "file": "/media/sad-meow-song.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s26",
+          "name": "Spiderman Meme Song",
+          "file": "/media/spiderman-meme-song.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s27",
+          "name": "Tehelka Omlette",
+          "file": "/media/tehelka-omlette.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s28",
+          "name": "Tum Dum Tedau",
+          "file": "/media/tum-dum-tedau.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s29",
+          "name": "Undertakers Bell 2Uwfcie",
+          "file": "/media/undertakers-bell_2UwFCIe.mp3",
+          "price": 20,
+          "enabled": true
+        },
+        {
+          "id": "s30",
+          "name": "Vine Boom",
+          "file": "/media/vine-boom.mp3",
+          "price": 20,
+          "enabled": true
+        }
+      ],
+      "memes": [
+        {
+          "id": "m1",
+          "name": "Ambani Mere Lode Pe Carryminati",
+          "file": "/media/ambani-mere-lode-pe-carryminati-video-meme-download.mp4",
+          "price": 30,
+          "enabled": true
+        },
+        {
+          "id": "m2",
+          "name": "Aww So Cute Ishowspeed",
+          "file": "/media/aww-so-cute-ishowspeed-video-meme-download.mp4",
+          "price": 30,
+          "enabled": true
+        },
+        {
+          "id": "m3",
+          "name": "Bahar Nikalo Isko Vijay Raaz",
+          "file": "/media/bahar-nikalo-isko-vijay-raaz-video-meme-download.mp4",
+          "price": 30,
+          "enabled": true
+        },
+        {
+          "id": "m4",
+          "name": "Bhai Mujhe Maaf Kar Do Arpit Bala",
+          "file": "/media/bhai-mujhe-maaf-kar-do-arpit-bala-video-meme-download.mp4",
+          "price": 30,
+          "enabled": true
+        },
+        {
+          "id": "m5",
+          "name": "Cat Laughing",
+          "file": "/media/cat-laughing-video-meme-download.mp4",
+          "price": 30,
+          "enabled": true
+        },
+        {
+          "id": "m6",
+          "name": "Cid Acp Pradyuman Bhenchod",
+          "file": "/media/cid-acp-pradyuman-bhenchod-video-meme-download.mp4",
+          "price": 30,
+          "enabled": true
+        },
+        {
+          "id": "m7",
+          "name": "Depression Me Rehta Hoon",
+          "file": "/media/depression-me-rehta-hoon-video-meme-download.mp4",
+          "price": 30,
+          "enabled": true
+        },
+        {
+          "id": "m8",
+          "name": "Ishowspeed Barking",
+          "file": "/media/ishowspeed-barking-video-meme-download.mp4",
+          "price": 30,
+          "enabled": true
+        },
+        {
+          "id": "m9",
+          "name": "Ishowspeed Sleep",
+          "file": "/media/ishowspeed-sleep-video-meme-download.mp4",
+          "price": 30,
+          "enabled": true
+        },
+        {
+          "id": "m10",
+          "name": "Kuch To Gadbad Hai Daya",
+          "file": "/media/kuch-to-gadbad-hai-daya-video-meme-download.mp4",
+          "price": 30,
+          "enabled": true
+        },
+        {
+          "id": "m11",
+          "name": "Kya Bak Rahe Ho Cid Acp Pradyuman",
+          "file": "/media/kya-bak-rahe-ho-cid-acp-pradyuman-video-meme-download.mp4",
+          "price": 30,
+          "enabled": true
+        },
+        {
+          "id": "m12",
+          "name": "Kya Joke Mara Hai Bhai Maza Aa Gaya",
+          "file": "/media/kya-joke-mara-hai-bhai-maza-aa-gaya-video-meme-download.mp4",
+          "price": 30,
+          "enabled": true
+        },
+        {
+          "id": "m13",
+          "name": "Paresh Rawal Pakad Mere Ko Mere Ko Janta Nahi Hai",
+          "file": "/media/paresh-rawal-pakad-mere-ko-mere-ko-janta-nahi-hai-video-meme-download.mp4",
+          "price": 30,
+          "enabled": true
+        },
+        {
+          "id": "m14",
+          "name": "Yeh Kya Hai",
+          "file": "/media/yeh-kya-hai-video-meme-download.mp4",
+          "price": 30,
+          "enabled": true
+        }
+      ],
+      "transactions": [],
+      "ownerUserId": null,
+      "platformFeePercent": 10,
+      "paymentMode": "test",
+      "payout": {
+        "upiId": "",
+        "status": "not_configured"
+      }
+    }
+  ],
+  "users": []
+}
