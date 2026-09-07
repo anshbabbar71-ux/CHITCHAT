@@ -6,5 +6,21 @@
 </div></div><script>
 async function post(url,data){let r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});let j=await r.json();if(!r.ok)throw new Error(j.error||"Error");return j}
 login.onclick=async()=>{lerr.textContent="";try{await post("/api/auth/login",{email:le.value,password:lp.value});location="/dashboard.html"}catch(e){lerr.textContent=e.message}}
-signup.onclick=async()=>{serr.textContent="";try{await post("/api/auth/signup",{displayName:name.value,slug:slug.value,email:email.value,password:pass.value});location="/dashboard.html"}catch(e){serr.textContent=e.message}}
+document.getElementById("signup").onclick=async()=>{
+  const errorBox=document.getElementById("serr");
+  errorBox.textContent="";
+
+  try{
+    await post("/api/auth/signup",{
+      displayName:document.getElementById("name").value.trim(),
+      slug:document.getElementById("slug").value.trim().toLowerCase(),
+      email:document.getElementById("email").value.trim().toLowerCase(),
+      password:document.getElementById("pass").value
+    });
+
+    location="/dashboard.html";
+  }catch(e){
+    errorBox.textContent=e.message;
+  }
+}
 </script></body></html>
