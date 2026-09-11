@@ -1,6 +1,5 @@
 <!doctype html>
 <html>
-
 <head>
 
 <meta charset="utf-8">
@@ -21,7 +20,6 @@ body {
   margin: 0;
 
   width: 100%;
-
   height: 100%;
 
   overflow: hidden;
@@ -44,7 +42,6 @@ body {
   position: absolute;
 
   left: 50%;
-
   top: 8%;
 
   transform:
@@ -52,21 +49,20 @@ body {
     scale(0.96);
 
   max-width: 520px;
-
   max-height: 55%;
 
   opacity: 0;
 
-  transition:
-    0.20s ease;
+  border-radius: 18px;
 
-  border-radius:
-    18px;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 
   filter:
     drop-shadow(
       0 12px 30px
-      rgba(0,0,0,0.45)
+      rgba(0, 0, 0, 0.45)
     );
 
 }
@@ -92,7 +88,6 @@ body {
   position: absolute;
 
   left: 50%;
-
   bottom: 10%;
 
   transform:
@@ -101,25 +96,22 @@ body {
 
   opacity: 0;
 
-  color: white;
-
-  text-align: center;
-
   max-width: 85%;
 
   padding:
     16px
     24px;
 
-  border-radius:
-    18px;
+  color: white;
+
+  text-align: center;
 
   background:
     rgba(
       10,
       10,
       18,
-      0.65
+      0.68
     );
 
   border:
@@ -128,8 +120,11 @@ body {
       255,
       255,
       255,
-      0.15
+      0.16
     );
+
+  border-radius:
+    18px;
 
   box-shadow:
     0 10px 35px
@@ -145,7 +140,8 @@ body {
     black;
 
   transition:
-    0.20s ease;
+    opacity 0.2s ease,
+    transform 0.2s ease;
 
 }
 
@@ -163,42 +159,33 @@ body {
 
 #n {
 
-  font-size:
-    30px;
+  font-size: 30px;
 
-  font-weight:
-    900;
+  font-weight: 900;
 
 }
 
 
 #msg {
 
-  font-size:
-    24px;
+  margin-top: 6px;
 
-  margin-top:
-    6px;
+  font-size: 24px;
 
-  line-height:
-    1.3;
+  line-height: 1.3;
 
 }
 
 
 #amt {
 
-  font-size:
-    20px;
+  margin-top: 6px;
 
-  font-weight:
-    800;
+  font-size: 20px;
 
-  margin-top:
-    6px;
+  font-weight: 800;
 
-  color:
-    #d9a6ff;
+  color: #d9a6ff;
 
 }
 
@@ -224,12 +211,10 @@ body {
 </div>
 
 
-
 <script src="/socket.io/socket.io.js"></script>
 
 
 <script>
-
 
 // ======================================================
 // CREATOR
@@ -256,9 +241,8 @@ socket.emit(
 );
 
 
-
 // ======================================================
-// HTML ELEMENTS
+// ELEMENTS
 // ======================================================
 
 const mediaBox =
@@ -291,12 +275,11 @@ const amountBox =
   );
 
 
-
 // ======================================================
-// ALERT QUEUE
+// QUEUE
 // ======================================================
 
-const queue =
+const alertQueue =
   [];
 
 
@@ -304,14 +287,52 @@ let busy =
   false;
 
 
+// ======================================================
+// SETTINGS
+// ======================================================
+
+const MIN_TEXT_VISIBLE_MS =
+  4000;
+
+
+const MAX_AUDIO_MS =
+  30000;
+
+
+const MAX_VIDEO_MS =
+  30000;
+
+
+const IMAGE_DISPLAY_MS =
+  5000;
+
 
 // ======================================================
-// NORMAL AUDIO PLAYER
+// WAIT
+// ======================================================
+
+function wait(ms) {
+
+  return new Promise(
+
+    resolve =>
+      setTimeout(
+        resolve,
+        ms
+      )
+
+  );
+
+}
+
+
+// ======================================================
+// PLAY AUDIO
 // ======================================================
 
 function playAudio(
   url,
-  maxTime = 20000
+  maxTime = MAX_AUDIO_MS
 ) {
 
   return new Promise(
@@ -345,7 +366,6 @@ function playAudio(
 
       let safetyTimer =
         null;
-
 
 
       function finish() {
@@ -389,14 +409,22 @@ function playAudio(
       }
 
 
-
       audio.onended =
         finish;
 
 
       audio.onerror =
-        finish;
+        function(error) {
 
+          console.error(
+            "Audio failed:",
+            url,
+            error
+          );
+
+          finish();
+
+        };
 
 
       safetyTimer =
@@ -409,7 +437,6 @@ function playAudio(
         );
 
 
-
       audio
         .play()
 
@@ -417,7 +444,8 @@ function playAudio(
           error => {
 
             console.error(
-              "Audio play failed:",
+              "Audio play blocked/failed:",
+              url,
               error
             );
 
@@ -432,205 +460,45 @@ function playAudio(
 }
 
 
-
 // ======================================================
 // TEXT TO SPEECH
 // ======================================================
 
-async function speak(
-  text
+async function playVoice(
+  voiceFile
 ) {
 
 
-  const cleanText =
-
-    String(
-      text ||
-      ""
-    )
-
-      .replace(
-        /\s+/g,
-        " "
-      )
-
-      .trim()
-
-      .slice(
-        0,
-        170
-      );
-
-
   if (
-    !cleanText
+    !voiceFile
   ) {
+
+    console.log(
+      "No TTS voice file for this alert"
+    );
 
     return;
 
   }
 
 
-
   /*
-    Server se TTS audio mangenge.
-
-    Agar TTS server response hi nahi deta,
-    maximum 3 seconds wait hoga.
-
     IMPORTANT:
-    Agar voice successfully start ho gayi,
-    hum voice ke COMPLETE hone tak wait karenge.
 
-    Voice finish hote hi soundboard/meme
-    IMMEDIATELY start hoga.
+    We wait until the COMPLETE TTS audio
+    finishes.
+
+    The instant it ends,
+    the soundboard starts.
   */
 
 
-  const controller =
-    new AbortController();
-
-
-  const fetchTimeout =
-    setTimeout(
-
-      () => {
-
-        controller.abort();
-
-      },
-
-      3000
-
-    );
-
-
-  try {
-
-
-    const response =
-      await fetch(
-
-        "/api/tts?text="
-
-        +
-
-        encodeURIComponent(
-          cleanText
-        )
-
-        +
-
-        "&_="
-
-        +
-
-        Date.now(),
-
-        {
-
-          signal:
-            controller.signal,
-
-          cache:
-            "no-store"
-
-        }
-
-      );
-
-
-    clearTimeout(
-      fetchTimeout
-    );
-
-
-    if (
-      !response.ok
-    ) {
-
-      console.error(
-        "TTS server failed:",
-        response.status
-      );
-
-      return;
-
-    }
-
-
-
-    const blob =
-      await response.blob();
-
-
-    if (
-      !blob.size
-    ) {
-
-      console.error(
-        "TTS returned empty audio"
-      );
-
-      return;
-
-    }
-
-
-
-    const audioUrl =
-      URL.createObjectURL(
-        blob
-      );
-
-
-    try {
-
-
-      /*
-        WAIT UNTIL TTS VOICE ACTUALLY ENDS.
-      */
-
-      await playAudio(
-
-        audioUrl,
-
-        20000
-
-      );
-
-
-    }
-
-    finally {
-
-
-      URL.revokeObjectURL(
-        audioUrl
-      );
-
-    }
-
-
-  }
-
-  catch (error) {
-
-
-    clearTimeout(
-      fetchTimeout
-    );
-
-
-    console.error(
-      "TTS skipped:",
-      error
-    );
-
-  }
+  await playAudio(
+    voiceFile,
+    MAX_AUDIO_MS
+  );
 
 }
-
 
 
 // ======================================================
@@ -652,21 +520,19 @@ async function playSound(
 
 
   /*
-    Sound jitna long hai,
-    next step uske complete hone ke baad hi.
+    No artificial gap.
+
+    Sound begins immediately
+    after TTS finishes.
   */
 
 
   await playAudio(
-
     soundFile,
-
-    20000
-
+    MAX_AUDIO_MS
   );
 
 }
-
 
 
 // ======================================================
@@ -716,7 +582,6 @@ function showMeme(
           .toLowerCase();
 
 
-
       // =========================================
       // IMAGE / GIF
       // =========================================
@@ -756,7 +621,6 @@ function showMeme(
         );
 
 
-
         requestAnimationFrame(
 
           () => {
@@ -772,10 +636,8 @@ function showMeme(
         );
 
 
-
         let finished =
           false;
-
 
 
         function finishImage() {
@@ -810,24 +672,32 @@ function showMeme(
         }
 
 
-
         image.onerror =
-          finishImage;
+          function(error) {
 
+            console.error(
+              "Meme image failed:",
+              memeFile,
+              error
+            );
+
+            finishImage();
+
+          };
 
 
         /*
-          GIF/image 5 sec display.
+          Meme itself stays visible for 5 sec.
 
-          Ye "gap" nahi hai.
-          Ye meme ka actual display duration hai.
+          This is NOT a gap.
+          This is its display duration.
         */
 
         setTimeout(
 
           finishImage,
 
-          5000
+          IMAGE_DISPLAY_MS
 
         );
 
@@ -837,9 +707,8 @@ function showMeme(
       }
 
 
-
       // =========================================
-      // VIDEO MEME
+      // VIDEO
       // =========================================
 
       const video =
@@ -861,6 +730,14 @@ function showMeme(
         true;
 
 
+      video.muted =
+        false;
+
+
+      video.volume =
+        1;
+
+
       video.loop =
         false;
 
@@ -872,7 +749,6 @@ function showMeme(
       mediaBox.appendChild(
         video
       );
-
 
 
       requestAnimationFrame(
@@ -890,10 +766,12 @@ function showMeme(
       );
 
 
-
       let finished =
         false;
 
+
+      let safetyTimer =
+        null;
 
 
       function finishVideo() {
@@ -910,6 +788,17 @@ function showMeme(
 
         finished =
           true;
+
+
+        if (
+          safetyTimer
+        ) {
+
+          clearTimeout(
+            safetyTimer
+          );
+
+        }
 
 
         try {
@@ -937,28 +826,32 @@ function showMeme(
       }
 
 
-
       video.onended =
         finishVideo;
 
 
       video.onerror =
-        finishVideo;
+        function(error) {
+
+          console.error(
+            "Meme video failed:",
+            memeFile,
+            error
+          );
+
+          finishVideo();
+
+        };
 
 
+      safetyTimer =
+        setTimeout(
 
-      /*
-        Sirf safety limit.
-        Normally video khud end hote hi next step.
-      */
+          finishVideo,
 
-      setTimeout(
+          MAX_VIDEO_MS
 
-        finishVideo,
-
-        15000
-
-      );
+        );
 
 
       video
@@ -968,7 +861,7 @@ function showMeme(
           error => {
 
             console.error(
-              "Meme video failed:",
+              "Video autoplay failed:",
               error
             );
 
@@ -983,7 +876,6 @@ function showMeme(
 }
 
 
-
 // ======================================================
 // PLAY ONE COMPLETE ALERT
 // ======================================================
@@ -993,6 +885,10 @@ async function playAlert(
 ) {
 
 
+  const alertStartedAt =
+    Date.now();
+
+
   const viewerName =
 
     String(
@@ -1000,8 +896,11 @@ async function playAlert(
       "Viewer"
     )
 
-      .trim();
+      .trim()
 
+    ||
+
+    "Viewer";
 
 
   const viewerMessage =
@@ -1014,7 +913,6 @@ async function playAlert(
       .trim();
 
 
-
   const amount =
 
     Number(
@@ -1023,10 +921,9 @@ async function playAlert(
     );
 
 
-
-  // =========================================
-  // SHOW TEXT ON STREAM
-  // =========================================
+  // ====================================================
+  // SHOW TEXT
+  // ====================================================
 
   nameBox.textContent =
     viewerName;
@@ -1053,98 +950,37 @@ async function playAlert(
     );
 
 
-
-  // =========================================
-  // CREATE SUPERCHAT STYLE TTS SENTENCE
-  // =========================================
-
-  let voiceText =
-    viewerName;
-
-
-
-  if (
-    amount > 0
-  ) {
-
-
-    voiceText +=
-
-      " sent "
-
-      +
-
-      amount
-
-      +
-
-      " rupees.";
-
-
-  }
-
-  else {
-
-
-    voiceText +=
-
-      " sent a message.";
-
-  }
-
-
-
-  if (
-    viewerMessage
-  ) {
-
-
-    voiceText +=
-
-      " "
-
-      +
-
-      viewerMessage;
-
-  }
-
-
-
   /*
     =====================================================
-    EXACT ORDER
+    EXACT SEQUENCE
 
-    1. TTS READS TEXT COMPLETELY
+    1. TTS plays fully
 
-    2. THE INSTANT TTS FINISHES:
-       SOUNDBOARD STARTS
+    2. IMMEDIATELY after TTS:
+       soundboard
 
-    3. THE INSTANT SOUNDBOARD FINISHES:
-       MEME STARTS
+    3. IMMEDIATELY after sound:
+       meme
 
-    4. THE INSTANT MEME FINISHES:
-       NEXT VIEWER STARTS
+    4. Then next viewer
 
-    NO ARTIFICIAL GAP.
+    NO artificial pause between them.
     =====================================================
   */
 
 
+  // ====================================================
+  // STEP 1 - TTS
+  // ====================================================
 
-  // =========================================
-  // STEP 1 - TEXT TO SPEECH
-  // =========================================
-
-  await speak(
-    voiceText
+  await playVoice(
+    data.voiceFile
   );
 
 
-
-  // =========================================
+  // ====================================================
   // STEP 2 - SOUNDBOARD
-  // =========================================
+  // ====================================================
 
   if (
     data.soundFile
@@ -1158,10 +994,9 @@ async function playAlert(
   }
 
 
-
-  // =========================================
+  // ====================================================
   // STEP 3 - MEME
-  // =========================================
+  // ====================================================
 
   if (
     data.memeFile
@@ -1175,10 +1010,62 @@ async function playAlert(
   }
 
 
+  // ====================================================
+  // TEXT MUST STAY AT LEAST 4 SECONDS
+  // ====================================================
 
-  // =========================================
-  // ALERT COMPLETE
-  // =========================================
+  const elapsed =
+
+    Date.now()
+
+    -
+
+    alertStartedAt;
+
+
+  const remainingTextTime =
+
+    MIN_TEXT_VISIBLE_MS
+
+    -
+
+    elapsed;
+
+
+  /*
+    IMPORTANT:
+
+    This does NOT add a gap between:
+
+    TTS -> sound -> meme.
+
+    Those happen immediately.
+
+    This only prevents the text box
+    from disappearing in milliseconds.
+
+    Usually TTS + sound/meme itself
+    will already be longer than 4 sec,
+    so there will be zero extra wait.
+  */
+
+
+  if (
+    remainingTextTime >
+    0
+  ) {
+
+
+    await wait(
+      remainingTextTime
+    );
+
+  }
+
+
+  // ====================================================
+  // ALERT FINISHED
+  // ====================================================
 
   alertBox
     .classList
@@ -1192,13 +1079,12 @@ async function playAlert(
 
 
   /*
-    NO wait() HERE.
+    NO 300ms / 700ms / 1 sec delay.
 
-    Next viewer immediately.
+    Next viewer starts immediately.
   */
 
 }
-
 
 
 // ======================================================
@@ -1221,27 +1107,22 @@ async function runQueue() {
     true;
 
 
-
   while (
-    queue.length >
+    alertQueue.length >
     0
   ) {
 
 
-    const data =
-      queue.shift();
+    const nextAlert =
+
+      alertQueue.shift();
 
 
     try {
 
 
-      /*
-        Current viewer completely finish hoga
-        tabhi loop next viewer pe jayega.
-      */
-
       await playAlert(
-        data
+        nextAlert
       );
 
 
@@ -1277,9 +1158,8 @@ async function runQueue() {
 }
 
 
-
 // ======================================================
-// RECEIVE ALERT FROM SERVER
+// RECEIVE ALERT
 // ======================================================
 
 socket.on(
@@ -1310,18 +1190,20 @@ socket.on(
     }
 
 
-
     /*
-      Alert direct play nahi hoga.
+      Even if 20 people send together:
 
-      Pehle queue mein jayega.
+      alert 1
+      ↓
+      alert 2
+      ↓
+      alert 3
 
-      Isliye 10 viewers ek saath
-      send karein tab bhi overlap nahi.
+      No overlap.
     */
 
 
-    queue.push(
+    alertQueue.push(
       data
     );
 
@@ -1332,9 +1214,7 @@ socket.on(
 
 );
 
-
 </script>
-
 
 </body>
 
