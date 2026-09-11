@@ -1,1506 +1,1130 @@
 <!doctype html>
-
 <html>
 
 <head>
 
-  <meta charset="utf-8">
+<meta charset="utf-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+<style>
 
-  <title>
-    CHITCHAT OBS Overlay
-  </title>
+html,
+body {
 
+  margin: 0;
+  width: 100%;
+  height: 100%;
 
-  <style>
+  overflow: hidden;
 
-    html,
-    body {
+  background: transparent;
 
-      margin: 0;
+  font-family: Arial, sans-serif;
 
-      width: 100%;
+}
 
-      height: 100%;
 
-      overflow: hidden;
+#m {
 
-      background: transparent;
+  position: absolute;
 
-      font-family:
-        Arial,
-        sans-serif;
+  left: 50%;
+  top: 8%;
 
-    }
+  transform:
+    translateX(-50%)
+    scale(.96);
 
+  max-width: 520px;
+  max-height: 55%;
 
-    /* =================================
-       MEME / VIDEO
-    ================================= */
+  opacity: 0;
 
+  transition: .25s ease;
 
-    #m {
+  border-radius: 18px;
 
-      position: absolute;
+}
 
-      left: 50%;
 
-      top: 8%;
+#m.show {
 
-      transform:
-        translateX(-50%)
-        scale(0.96);
+  opacity: 1;
 
-      max-width: 520px;
+  transform:
+    translateX(-50%)
+    scale(1);
 
-      max-height: 55%;
+}
 
-      opacity: 0;
 
-      transition:
-        0.25s ease;
+#t {
 
-      border-radius:
-        18px;
+  position: absolute;
 
-      filter:
+  left: 50%;
+  bottom: 10%;
 
-        drop-shadow(
-          0 12px 30px
-          rgba(0,0,0,0.45)
-        );
+  transform:
+    translateX(-50%)
+    translateY(20px);
 
-    }
+  opacity: 0;
 
+  color: white;
 
-    #m.show {
+  text-align: center;
 
-      opacity: 1;
+  max-width: 85%;
 
-      transform:
-        translateX(-50%)
-        scale(1);
+  padding: 16px 24px;
 
-    }
+  border-radius: 18px;
 
+  background:
+    rgba(10,10,18,.65);
 
-    /* =================================
-       TEXT ALERT
-    ================================= */
+  border:
+    1px solid
+    rgba(255,255,255,.15);
 
+  text-shadow:
+    0 3px 14px black;
 
-    #t {
+  transition: .25s ease;
 
-      position: absolute;
+}
 
-      left: 50%;
 
-      bottom: 10%;
+#t.show {
 
-      transform:
+  opacity: 1;
 
-        translateX(-50%)
+  transform:
+    translateX(-50%)
+    translateY(0);
 
-        translateY(20px);
+}
 
 
-      opacity: 0;
+#n {
 
+  font-size: 30px;
 
-      color: white;
+  font-weight: 900;
 
+}
 
-      text-align:
-        center;
 
+#msg {
 
-      max-width:
-        85%;
+  font-size: 24px;
 
+  margin-top: 6px;
 
-      padding:
+}
 
-        16px
 
-        24px;
+#amt {
 
+  font-size: 20px;
 
-      border-radius:
-        18px;
+  font-weight: 800;
 
+  margin-top: 6px;
 
-      background:
+  color: #d9a6ff;
 
-        rgba(
-          10,
-          10,
-          18,
-          0.65
-        );
+}
 
-
-      border:
-
-        1px solid
-
-        rgba(
-          255,
-          255,
-          255,
-          0.16
-        );
-
-
-      box-shadow:
-
-        0 10px 35px
-
-        rgba(
-          0,
-          0,
-          0,
-          0.35
-        );
-
-
-      text-shadow:
-
-        0 3px 14px
-
-        black;
-
-
-      transition:
-
-        0.25s ease;
-
-    }
-
-
-    #t.show {
-
-      opacity: 1;
-
-      transform:
-
-        translateX(-50%)
-
-        translateY(0);
-
-    }
-
-
-    #n {
-
-      font-size:
-        30px;
-
-      font-weight:
-        900;
-
-    }
-
-
-    #msg {
-
-      font-size:
-        24px;
-
-      margin-top:
-        6px;
-
-      line-height:
-        1.3;
-
-    }
-
-
-    #amt {
-
-      font-size:
-        20px;
-
-      font-weight:
-        800;
-
-      margin-top:
-        6px;
-
-      color:
-        #d9a6ff;
-
-    }
-
-  </style>
+</style>
 
 </head>
-
 
 
 <body>
 
 
-  <div id="media"></div>
+<div id="media"></div>
 
 
-  <div id="t">
+<div id="t">
 
-    <div id="n"></div>
+  <div id="n"></div>
 
-    <div id="msg"></div>
+  <div id="msg"></div>
 
-    <div id="amt"></div>
+  <div id="amt"></div>
 
-  </div>
-
-
-
-  <script
-    src="/socket.io/socket.io.js"
-  ></script>
+</div>
 
 
-  <script>
+
+<script src="/socket.io/socket.io.js"></script>
 
 
-    // =====================================
-    // CREATOR
-    // =====================================
+<script>
 
 
-    const slug =
+const slug =
 
-      new URLSearchParams(
+  new URLSearchParams(
+    location.search
+  ).get("creator")
 
-        window.location.search
+  ||
 
-      ).get(
-        "creator"
+  "ansh";
+
+
+const socket = io();
+
+
+socket.emit(
+  "join-creator",
+  slug
+);
+
+
+
+const mediaBox =
+  document.getElementById("media");
+
+
+const alertBox =
+  document.getElementById("t");
+
+
+const nameBox =
+  document.getElementById("n");
+
+
+const messageBox =
+  document.getElementById("msg");
+
+
+const amountBox =
+  document.getElementById("amt");
+
+
+
+// ========================================
+// QUEUE
+// ========================================
+
+
+const queue = [];
+
+
+let busy = false;
+
+
+
+function wait(ms) {
+
+  return new Promise(
+
+    resolve =>
+      setTimeout(
+        resolve,
+        ms
       )
 
-      ||
+  );
 
-      "ansh";
+}
 
 
 
-    const socket =
-      io();
+// ========================================
+// AUDIO PLAYER
+// ========================================
 
 
+function playAudio(
+  url,
+  maxTime = 20000
+) {
 
-    socket.emit(
+  return new Promise(
+    resolve => {
 
-      "join-creator",
 
-      slug
+      if (!url) {
 
-    );
-
-
-
-    // =====================================
-    // HTML ELEMENTS
-    // =====================================
-
-
-    const mediaBox =
-
-      document.getElementById(
-        "media"
-      );
-
-
-    const alertBox =
-
-      document.getElementById(
-        "t"
-      );
-
-
-    const nameBox =
-
-      document.getElementById(
-        "n"
-      );
-
-
-    const messageBox =
-
-      document.getElementById(
-        "msg"
-      );
-
-
-    const amountBox =
-
-      document.getElementById(
-        "amt"
-      );
-
-
-
-    // =====================================
-    // ALERT QUEUE
-    // =====================================
-
-
-    const alertQueue =
-      [];
-
-
-    let busy =
-      false;
-
-
-
-    function wait(ms) {
-
-
-      return new Promise(
-
-        resolve =>
-
-          setTimeout(
-
-            resolve,
-
-            ms
-
-          )
-
-      );
-
-    }
-
-
-
-    // =====================================
-    // SPLIT LONG TTS MESSAGE
-    // =====================================
-
-
-    function splitText(
-
-      text,
-
-      maxLength = 160
-
-    ) {
-
-
-      const words =
-
-        String(
-          text ||
-          ""
-        )
-
-          .trim()
-
-          .split(
-            /\s+/
-          )
-
-          .filter(
-            Boolean
-          );
-
-
-
-      if (
-        !words.length
-      ) {
-
-        return [];
-
-      }
-
-
-
-      const parts =
-        [];
-
-
-      let current =
-        "";
-
-
-
-      for (
-        const word
-        of words
-      ) {
-
-
-        const next =
-
-          current
-
-            ? current +
-              " " +
-              word
-
-            : word;
-
-
-
-        if (
-
-          next.length >
-          maxLength
-
-        ) {
-
-
-          if (
-            current
-          ) {
-
-            parts.push(
-              current
-            );
-
-          }
-
-
-
-          if (
-
-            word.length >
-            maxLength
-
-          ) {
-
-
-            for (
-
-              let i = 0;
-
-              i < word.length;
-
-              i += maxLength
-
-            ) {
-
-
-              parts.push(
-
-                word.slice(
-
-                  i,
-
-                  i +
-                  maxLength
-
-                )
-
-              );
-
-            }
-
-
-            current =
-              "";
-
-          }
-
-          else {
-
-
-            current =
-              word;
-
-          }
-
-        }
-
-        else {
-
-
-          current =
-            next;
-
-        }
-
-      }
-
-
-
-      if (
-        current
-      ) {
-
-        parts.push(
-          current
-        );
-
-      }
-
-
-
-      return parts;
-
-    }
-
-
-
-    // =====================================
-    // PLAY ANY AUDIO
-    // =====================================
-
-
-    function playAudioUrl(
-
-      url,
-
-      maxMs = 20000
-
-    ) {
-
-
-      return new Promise(
-
-        resolve => {
-
-
-          if (
-            !url
-          ) {
-
-            resolve();
-
-            return;
-
-          }
-
-
-
-          const audio =
-
-            new Audio(
-              url
-            );
-
-
-          audio.preload =
-            "auto";
-
-
-          audio.volume =
-            1;
-
-
-
-          let finished =
-            false;
-
-
-          let safetyTimer =
-            null;
-
-
-
-          const finish =
-            () => {
-
-
-              if (
-                finished
-              ) {
-
-                return;
-
-              }
-
-
-              finished =
-                true;
-
-
-
-              if (
-                safetyTimer
-              ) {
-
-                clearTimeout(
-                  safetyTimer
-                );
-
-              }
-
-
-
-              try {
-
-
-                audio.pause();
-
-
-                audio.currentTime =
-                  0;
-
-
-              }
-
-              catch (e) {}
-
-
-              resolve();
-
-            };
-
-
-
-          audio.onended =
-            finish;
-
-
-          audio.onerror =
-            finish;
-
-
-
-          safetyTimer =
-            setTimeout(
-
-              finish,
-
-              maxMs
-
-            );
-
-
-
-          audio
-            .play()
-
-            .catch(
-              finish
-            );
-
-        }
-
-      );
-
-    }
-
-
-
-    // =====================================
-    // TEXT TO SPEECH
-    // =====================================
-
-
-    async function speak(
-      text
-    ) {
-
-
-      const parts =
-
-        splitText(
-
-          text,
-
-          160
-
-        );
-
-
-
-      for (
-
-        const part
-        of parts
-
-      ) {
-
-
-        const voiceUrl =
-
-          "/api/tts?text="
-
-          +
-
-          encodeURIComponent(
-            part
-          )
-
-          +
-
-          "&_="
-
-          +
-
-          Date.now();
-
-
-
-        await playAudioUrl(
-
-          voiceUrl,
-
-          20000
-
-        );
-
-      }
-
-    }
-
-
-
-    // =====================================
-    // PLAY SOUNDBOARD
-    // =====================================
-
-
-    function playSound(
-      soundFile
-    ) {
-
-
-      return playAudioUrl(
-
-        soundFile,
-
-        20000
-
-      );
-
-    }
-
-
-
-    // =====================================
-    // SHOW MEME / GIF / VIDEO
-    // =====================================
-
-
-    function showMeme(
-      memeFile
-    ) {
-
-
-      return new Promise(
-
-        resolve => {
-
-
-          if (
-            !memeFile
-          ) {
-
-            resolve();
-
-            return;
-
-          }
-
-
-
-          mediaBox.innerHTML =
-            "";
-
-
-
-          const cleanUrl =
-
-            String(
-              memeFile
-            )
-
-              .split(
-                "?"
-              )[0];
-
-
-
-          const extension =
-
-            cleanUrl
-
-              .split(
-                "."
-              )
-
-              .pop()
-
-              .toLowerCase();
-
-
-
-          // ==============================
-          // IMAGE / GIF
-          // ==============================
-
-
-          if (
-
-            [
-              "gif",
-              "png",
-              "jpg",
-              "jpeg",
-              "webp"
-            ].includes(
-              extension
-            )
-
-          ) {
-
-
-            const image =
-
-              document.createElement(
-                "img"
-              );
-
-
-            image.src =
-              memeFile;
-
-
-            image.id =
-              "m";
-
-
-            mediaBox.appendChild(
-              image
-            );
-
-
-
-            requestAnimationFrame(
-
-              () => {
-
-
-                image
-
-                  .classList
-
-                  .add(
-                    "show"
-                  );
-
-              }
-
-            );
-
-
-
-            setTimeout(
-
-              () => {
-
-
-                image
-
-                  .classList
-
-                  .remove(
-                    "show"
-                  );
-
-
-
-                setTimeout(
-
-                  () => {
-
-
-                    mediaBox.innerHTML =
-                      "";
-
-
-                    resolve();
-
-
-                  },
-
-                  250
-
-                );
-
-
-              },
-
-              5000
-
-            );
-
-
-            return;
-
-          }
-
-
-
-          // ==============================
-          // VIDEO MEME
-          // ==============================
-
-
-          const video =
-
-            document.createElement(
-              "video"
-            );
-
-
-          video.src =
-            memeFile;
-
-
-          video.autoplay =
-            true;
-
-
-          video.playsInline =
-            true;
-
-
-          video.loop =
-            false;
-
-
-          video.id =
-            "m";
-
-
-          mediaBox.appendChild(
-            video
-          );
-
-
-
-          requestAnimationFrame(
-
-            () => {
-
-
-              video
-
-                .classList
-
-                .add(
-                  "show"
-                );
-
-            }
-
-          );
-
-
-
-          let finished =
-            false;
-
-
-
-          function finishVideo() {
-
-
-            if (
-              finished
-            ) {
-
-              return;
-
-            }
-
-
-            finished =
-              true;
-
-
-
-            try {
-
-              video.pause();
-
-            }
-
-            catch (e) {}
-
-
-
-            video
-
-              .classList
-
-              .remove(
-                "show"
-              );
-
-
-
-            setTimeout(
-
-              () => {
-
-
-                mediaBox.innerHTML =
-                  "";
-
-
-                resolve();
-
-
-              },
-
-              250
-
-            );
-
-          }
-
-
-
-          video.onended =
-            finishVideo;
-
-
-          video.onerror =
-            finishVideo;
-
-
-
-          setTimeout(
-
-            finishVideo,
-
-            15000
-
-          );
-
-
-
-          video
-            .play()
-
-            .catch(
-              finishVideo
-            );
-
-        }
-
-      );
-
-    }
-
-
-
-    // =====================================
-    // PLAY ONE COMPLETE ALERT
-    // =====================================
-
-
-    async function playAlert(
-      data
-    ) {
-
-
-      const viewerName =
-
-        String(
-
-          data.name ||
-          "Viewer"
-
-        )
-
-          .trim();
-
-
-
-      const viewerMessage =
-
-        String(
-
-          data.message ||
-          ""
-
-        )
-
-          .trim();
-
-
-
-      const amount =
-
-        Number(
-
-          data.amount ||
-          0
-
-        );
-
-
-
-      // =================================
-      // SHOW TEXT ON OBS
-      // =================================
-
-
-      nameBox.textContent =
-        viewerName;
-
-
-      messageBox.textContent =
-        viewerMessage;
-
-
-      amountBox.textContent =
-
-        amount > 0
-
-          ? "₹" +
-            amount
-
-          : "";
-
-
-
-      alertBox
-
-        .classList
-
-        .add(
-          "show"
-        );
-
-
-
-      // =================================
-      // CREATE TTS SENTENCE
-      // =================================
-
-
-      let voiceText =
-        viewerName;
-
-
-
-      if (
-        amount > 0
-      ) {
-
-
-        voiceText +=
-
-          " sent "
-
-          +
-
-          amount
-
-          +
-
-          " rupees.";
-
-
-      }
-
-      else {
-
-
-        voiceText +=
-
-          " sent a message.";
-
-      }
-
-
-
-      if (
-        viewerMessage
-      ) {
-
-
-        voiceText +=
-
-          " "
-
-          +
-
-          viewerMessage;
-
-      }
-
-
-
-      /*
-        FINAL ALERT ORDER
-
-        1. NAME + AMOUNT + MESSAGE READ
-
-        2. SOUNDBOARD
-
-        3. MEME / GIF / VIDEO
-
-        4. NEXT VIEWER
-      */
-
-
-
-      // =================================
-      // STEP 1 - READ MESSAGE
-      // =================================
-
-
-      await speak(
-        voiceText
-      );
-
-
-
-      // =================================
-      // STEP 2 - SOUNDBOARD
-      // =================================
-
-
-      if (
-        data.soundFile
-      ) {
-
-
-        await playSound(
-
-          data.soundFile
-
-        );
-
-      }
-
-
-
-      // =================================
-      // STEP 3 - MEME
-      // =================================
-
-
-      if (
-        data.memeFile
-      ) {
-
-
-        await showMeme(
-
-          data.memeFile
-
-        );
-
-      }
-
-
-
-      // =================================
-      // TEXT ONLY ALERT EXTRA DISPLAY
-      // =================================
-
-
-      if (
-
-        !data.soundFile
-
-        &&
-
-        !data.memeFile
-
-      ) {
-
-
-        await wait(
-          900
-        );
-
-      }
-
-
-
-      // =================================
-      // HIDE CURRENT ALERT
-      // =================================
-
-
-      alertBox
-
-        .classList
-
-        .remove(
-          "show"
-        );
-
-
-      mediaBox.innerHTML =
-        "";
-
-
-
-      // gap before next viewer
-
-      await wait(
-        400
-      );
-
-    }
-
-
-
-    // =====================================
-    // QUEUE PROCESSOR
-    // =====================================
-
-
-    async function runQueue() {
-
-
-      if (
-        busy
-      ) {
+        resolve();
 
         return;
 
       }
 
 
-      busy =
-        true;
+      const audio =
+        new Audio(url);
+
+
+      audio.volume =
+        1;
+
+
+      let finished =
+        false;
+
+
+      let timer =
+        null;
 
 
 
-      while (
-
-        alertQueue.length >
-        0
-
-      ) {
+      function finish() {
 
 
-        const nextAlert =
+        if (finished) {
 
-          alertQueue.shift();
+          return;
 
+        }
+
+
+        finished =
+          true;
+
+
+        if (timer) {
+
+          clearTimeout(
+            timer
+          );
+
+        }
 
 
         try {
 
-
-          await playAlert(
-
-            nextAlert
-
-          );
-
+          audio.pause();
 
         }
 
-        catch (
-          error
-        ) {
+        catch (e) {}
 
 
-          console.error(
-
-            "Alert error:",
-
-            error
-
-          );
-
-
-          alertBox
-
-            .classList
-
-            .remove(
-              "show"
-            );
-
-
-          mediaBox.innerHTML =
-            "";
-
-
-          await wait(
-            300
-          );
-
-        }
+        resolve();
 
       }
 
 
 
-      busy =
-        false;
+      audio.onended =
+        finish;
+
+
+      audio.onerror =
+        finish;
+
+
+
+      timer =
+        setTimeout(
+
+          finish,
+
+          maxTime
+
+        );
+
+
+
+      audio
+        .play()
+
+        .catch(
+          finish
+        );
+
+    }
+  );
+
+}
+
+
+
+// ========================================
+// TEXT TO SPEECH
+// ========================================
+
+
+async function speak(text) {
+
+
+  if (!text) {
+
+    return;
+
+  }
+
+
+  /*
+    TTS server ko max 3 sec dete hain.
+
+    Agar voice server fail hua,
+    soundboard/meme block nahi honge.
+  */
+
+
+  const controller =
+    new AbortController();
+
+
+  const timeout =
+    setTimeout(
+
+      () => {
+
+        controller.abort();
+
+      },
+
+      3000
+
+    );
+
+
+  try {
+
+
+    const response =
+      await fetch(
+
+        "/api/tts?text=" +
+
+        encodeURIComponent(
+          text.slice(
+            0,
+            170
+          )
+        ),
+
+        {
+
+          signal:
+            controller.signal,
+
+          cache:
+            "no-store"
+
+        }
+
+      );
+
+
+    clearTimeout(
+      timeout
+    );
+
+
+    if (
+      !response.ok
+    ) {
+
+      return;
 
     }
 
 
 
-    // =====================================
-    // RECEIVE ALERT FROM SERVER
-    // =====================================
+    const blob =
+      await response.blob();
 
 
-    socket.on(
+    if (
+      !blob.size
+    ) {
 
-      "show-alert",
+      return;
 
-      data => {
-
-
-        if (
-          !data
-        ) {
-
-          return;
-
-        }
-
-
-        if (
-
-          data.creatorSlug !==
-          slug
-
-        ) {
-
-          return;
-
-        }
+    }
 
 
 
-        /*
-          NEVER PLAY DIRECTLY.
-
-          EVERY ALERT FIRST GOES
-          INTO THE QUEUE.
-        */
+    const audioUrl =
+      URL.createObjectURL(
+        blob
+      );
 
 
-        alertQueue.push(
-          data
-        );
+    try {
 
 
-        runQueue();
+      await playAudio(
 
-      }
+        audioUrl,
 
+        20000
+
+      );
+
+
+    }
+
+    finally {
+
+
+      URL.revokeObjectURL(
+        audioUrl
+      );
+
+    }
+
+
+  }
+
+  catch (error) {
+
+
+    clearTimeout(
+      timeout
     );
 
 
-  </script>
+    console.log(
+      "TTS skipped:",
+      error.message
+    );
+
+  }
+
+}
+
+
+
+// ========================================
+// SOUNDBOARD
+// ========================================
+
+
+async function playSound(
+  soundFile
+) {
+
+
+  if (!soundFile) {
+
+    return;
+
+  }
+
+
+  await playAudio(
+
+    soundFile,
+
+    20000
+
+  );
+
+}
+
+
+
+// ========================================
+// MEME / GIF / VIDEO
+// ========================================
+
+
+function showMeme(
+  memeFile
+) {
+
+  return new Promise(
+    resolve => {
+
+
+      if (!memeFile) {
+
+        resolve();
+
+        return;
+
+      }
+
+
+      mediaBox.innerHTML =
+        "";
+
+
+      const cleanUrl =
+
+        String(
+          memeFile
+        )
+
+          .split("?")[0];
+
+
+      const extension =
+
+        cleanUrl
+
+          .split(".")
+
+          .pop()
+
+          .toLowerCase();
+
+
+
+      // IMAGE / GIF
+
+      if (
+
+        [
+          "gif",
+          "png",
+          "jpg",
+          "jpeg",
+          "webp"
+        ].includes(
+          extension
+        )
+
+      ) {
+
+
+        const image =
+
+          document.createElement(
+            "img"
+          );
+
+
+        image.src =
+          memeFile;
+
+
+        image.id =
+          "m";
+
+
+        mediaBox.appendChild(
+          image
+        );
+
+
+        requestAnimationFrame(
+          () => {
+
+            image
+              .classList
+              .add("show");
+
+          }
+        );
+
+
+
+        image.onerror =
+          () => {
+
+            mediaBox.innerHTML =
+              "";
+
+            resolve();
+
+          };
+
+
+
+        setTimeout(
+          () => {
+
+
+            image
+              .classList
+              .remove("show");
+
+
+            setTimeout(
+              () => {
+
+                mediaBox.innerHTML =
+                  "";
+
+                resolve();
+
+              },
+
+              200
+
+            );
+
+
+          },
+
+          5000
+
+        );
+
+
+        return;
+
+      }
+
+
+
+      // VIDEO MEME
+
+      const video =
+
+        document.createElement(
+          "video"
+        );
+
+
+      video.src =
+        memeFile;
+
+
+      video.autoplay =
+        true;
+
+
+      video.playsInline =
+        true;
+
+
+      video.loop =
+        false;
+
+
+      video.id =
+        "m";
+
+
+      mediaBox.appendChild(
+        video
+      );
+
+
+      requestAnimationFrame(
+        () => {
+
+          video
+            .classList
+            .add("show");
+
+        }
+      );
+
+
+
+      let finished =
+        false;
+
+
+
+      function finishVideo() {
+
+
+        if (finished) {
+
+          return;
+
+        }
+
+
+        finished =
+          true;
+
+
+        try {
+
+          video.pause();
+
+        }
+
+        catch (e) {}
+
+
+        video
+          .classList
+          .remove("show");
+
+
+        mediaBox.innerHTML =
+          "";
+
+
+        resolve();
+
+      }
+
+
+
+      video.onended =
+        finishVideo;
+
+
+      video.onerror =
+        finishVideo;
+
+
+
+      setTimeout(
+
+        finishVideo,
+
+        15000
+
+      );
+
+
+      video
+        .play()
+
+        .catch(
+          finishVideo
+        );
+
+    }
+  );
+
+}
+
+
+
+// ========================================
+// ONE ALERT
+// ========================================
+
+
+async function playAlert(
+  data
+) {
+
+
+  const viewerName =
+
+    String(
+      data.name ||
+      "Viewer"
+    ).trim();
+
+
+
+  const viewerMessage =
+
+    String(
+      data.message ||
+      ""
+    ).trim();
+
+
+
+  const amount =
+
+    Number(
+      data.amount ||
+      0
+    );
+
+
+
+  nameBox.textContent =
+    viewerName;
+
+
+  messageBox.textContent =
+    viewerMessage;
+
+
+  amountBox.textContent =
+
+    amount > 0
+
+      ? "₹" + amount
+
+      : "";
+
+
+
+  alertBox
+    .classList
+    .add("show");
+
+
+
+  // =================================
+  // VOICE TEXT
+  // =================================
+
+
+  let voiceText =
+    viewerName;
+
+
+
+  if (
+    amount > 0
+  ) {
+
+
+    voiceText +=
+
+      " sent "
+
+      +
+
+      amount
+
+      +
+
+      " rupees.";
+
+
+  }
+
+  else {
+
+
+    voiceText +=
+
+      " sent a message.";
+
+  }
+
+
+
+  if (
+    viewerMessage
+  ) {
+
+
+    voiceText +=
+
+      " "
+
+      +
+
+      viewerMessage;
+
+  }
+
+
+
+  /*
+      ORDER:
+
+      1. TEXT READ
+
+      2. SOUND
+
+      3. MEME
+
+      4. NEXT VIEWER
+  */
+
+
+
+  // TEXT READ
+  // Fail ho gaya to max 3 sec baad continue.
+
+  await speak(
+    voiceText
+  );
+
+
+
+  // SOUNDBOARD
+
+  if (
+    data.soundFile
+  ) {
+
+
+    await playSound(
+      data.soundFile
+    );
+
+  }
+
+
+
+  // MEME
+
+  if (
+    data.memeFile
+  ) {
+
+
+    await showMeme(
+      data.memeFile
+    );
+
+  }
+
+
+
+  // text-only alert
+
+  if (
+
+    !data.soundFile
+
+    &&
+
+    !data.memeFile
+
+  ) {
+
+
+    await wait(
+      700
+    );
+
+  }
+
+
+
+  alertBox
+    .classList
+    .remove("show");
+
+
+  mediaBox.innerHTML =
+    "";
+
+
+  await wait(
+    300
+  );
+
+}
+
+
+
+// ========================================
+// QUEUE PROCESSOR
+// ========================================
+
+
+async function runQueue() {
+
+
+  if (busy) {
+
+    return;
+
+  }
+
+
+  busy =
+    true;
+
+
+
+  while (
+    queue.length
+  ) {
+
+
+    const data =
+      queue.shift();
+
+
+    try {
+
+
+      await playAlert(
+        data
+      );
+
+
+    }
+
+    catch (error) {
+
+
+      console.error(
+        "Alert failed:",
+        error
+      );
+
+
+      alertBox
+        .classList
+        .remove("show");
+
+
+      mediaBox.innerHTML =
+        "";
+
+
+      await wait(
+        200
+      );
+
+    }
+
+  }
+
+
+  busy =
+    false;
+
+}
+
+
+
+// ========================================
+// RECEIVE ALERT
+// ========================================
+
+
+socket.on(
+
+  "show-alert",
+
+  data => {
+
+
+    if (!data) {
+
+      return;
+
+    }
+
+
+    if (
+
+      data.creatorSlug !==
+      slug
+
+    ) {
+
+      return;
+
+    }
+
+
+    /*
+      SPAM OVERLAP NAHI.
+
+      HAR ALERT LINE MEIN.
+    */
+
+
+    queue.push(
+      data
+    );
+
+
+    runQueue();
+
+  }
+
+);
+
+
+</script>
 
 
 </body>
