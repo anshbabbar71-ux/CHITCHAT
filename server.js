@@ -1,6 +1,5 @@
 const express = require("express");
 const http = require("http");
-const https = require("https");
 const { Server } = require("socket.io");
 const multer = require("multer");
 const path = require("path");
@@ -10,29 +9,60 @@ const bcrypt = require("bcryptjs");
 const session = require("express-session");
 const { Pool } = require("pg");
 const pgSession = require("connect-pg-simple")(session);
+const { EdgeTTS } = require("node-edge-tts");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const MEDIA_DIR = path.join(__dirname, "public", "media");
+
+// ======================================================
+// FOLDERS
+// ======================================================
+
+const MEDIA_DIR = path.join(
+  __dirname,
+  "public",
+  "media"
+);
+
+const TTS_DIR = path.join(
+  __dirname,
+  "public",
+  "tts"
+);
+
+
+fs.mkdirSync(
+  MEDIA_DIR,
+  { recursive: true }
+);
+
+fs.mkdirSync(
+  TTS_DIR,
+  { recursive: true }
+);
+
+
+// ======================================================
+// SETTINGS
+// ======================================================
 
 const SESSION_SECRET =
   process.env.SESSION_SECRET ||
   "local-dev-only-secret";
 
 
+const TEST_ALERT_COOLDOWN_MS =
+  3000;
+
+
+const testAlertCooldown =
+  new Map();
+
+
 // ======================================================
-// TEST ALERT ANTI-SPAM
-// ======================================================
-
-const TEST_ALERT_COOLDOWN_MS = 5000;
-
-const testAlertCooldown = new Map();
-
-
-// ======================================================
-// DATABASE CHECK
+// DATABASE
 // ======================================================
 
 if (!process.env.DATABASE_URL) {
@@ -44,25 +74,6 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
-
-// ======================================================
-// MAKE SURE MEDIA FOLDER EXISTS
-// ======================================================
-
-if (!fs.existsSync(MEDIA_DIR)) {
-
-  fs.mkdirSync(
-    MEDIA_DIR,
-    {
-      recursive: true
-    }
-  );
-}
-
-
-// ======================================================
-// POSTGRESQL
-// ======================================================
 
 const pool = new Pool({
 
@@ -83,24 +94,17 @@ app.set(
 
 
 app.use(
-
   express.json({
     limit: "1mb"
   })
-
 );
 
 
 app.use(
-
   express.urlencoded({
-
     extended: true,
-
     limit: "1mb"
-
   })
-
 );
 
 
@@ -160,7 +164,7 @@ app.use(
 
 
 // ======================================================
-// STATIC WEBSITE FILES
+// STATIC WEBSITE
 // ======================================================
 
 app.use(
@@ -206,7 +210,6 @@ function cleanName(s) {
 }
 
 
-
 function slugify(s) {
 
   return String(s || "")
@@ -231,7 +234,6 @@ function slugify(s) {
     );
 
 }
-
 
 
 function publicCreator(c) {
@@ -271,7 +273,7 @@ function publicCreator(c) {
 
 
 // ======================================================
-// DATABASE SETUP
+// DATABASE INITIALIZATION
 // ======================================================
 
 async function initDB() {
@@ -300,8 +302,7 @@ async function initDB() {
       NOT NULL
       DEFAULT 10,
 
-      payment_mode
-      VARCHAR(20)
+      payment_mode VARCHAR(20)
       NOT NULL
       DEFAULT 'test',
 
@@ -428,7 +429,6 @@ async function creatorBySlug(slug) {
 }
 
 
-
 async function creatorById(id) {
 
   const r =
@@ -447,7 +447,6 @@ async function creatorById(id) {
   );
 
 }
-
 
 
 async function currentUser(req) {
@@ -482,7 +481,7 @@ async function currentUser(req) {
 
 
 // ======================================================
-// CREATOR LOGIN PROTECTION
+// LOGIN PROTECTION
 // ======================================================
 
 async function requireCreator(
@@ -543,9 +542,11 @@ async function requireCreator(
 
   }
 
-  catch (e) {
+  catch (error) {
 
-    console.error(e);
+    console.error(
+      error
+    );
 
 
     res
@@ -563,7 +564,7 @@ async function requireCreator(
 
 
 // ======================================================
-// FILE UPLOAD
+// UPLOAD SETTINGS
 // ======================================================
 
 const storage =
@@ -593,8 +594,14 @@ const storage =
 
         null,
 
-        Date.now() +
-        "-" +
+        Date.now()
+
+        +
+
+        "-"
+
+        +
+
         cleanName(
           file.originalname
         )
@@ -621,6 +628,168 @@ const upload =
     }
 
   });
+
+
+// ======================================================
+// TTS TEXT
+// ======================================================
+
+function buildVoiceText(
+  name,
+  amount,
+  message
+) {
+
+  let text =
+
+    String(
+      name ||
+      "Viewer"
+    ).trim()
+
+    ||
+
+    "Viewer";
+
+
+  if (
+    Number(amount) > 0
+  ) {
+
+    text +=
+
+      ` sent ${Number(amount)} rupees.`;
+
+  }
+
+  else {
+
+    text +=
+
+      " sent a message.";
+
+  }
+
+
+  const cleanMessage =
+
+    String(
+      message ||
+      ""
+    ).trim();
+
+
+  if (
+    cleanMessage
+  ) {
+
+    text +=
+
+      ` ${cleanMessage}`;
+
+  }
+
+
+  return text.slice(
+    0,
+    260
+  );
+
+}
+
+
+// ======================================================
+// CREATE REAL TTS MP3
+// ======================================================
+
+async function createVoiceFile(
+  text
+) {
+
+  const filename =
+
+    `tts-${crypto.randomUUID()}.mp3`;
+
+
+  const fullPath =
+
+    path.join(
+      TTS_DIR,
+      filename
+    );
+
+
+  const tts =
+    new EdgeTTS({
+
+      voice:
+        "en-IN-NeerjaNeural",
+
+      lang:
+        "en-IN",
+
+      outputFormat:
+        "audio-24khz-48kbitrate-mono-mp3",
+
+      rate:
+        "+0%",
+
+      volume:
+        "+0%",
+
+      timeout:
+        5000
+
+    });
+
+
+  await tts.ttsPromise(
+
+    text,
+
+    fullPath
+
+  );
+
+
+  // Delete temporary voice file after 10 mins
+
+  const cleanup =
+    setTimeout(
+
+      () => {
+
+        fs.unlink(
+          fullPath,
+          () => {}
+        );
+
+      },
+
+      10 *
+      60 *
+      1000
+
+    );
+
+
+  if (
+    cleanup.unref
+  ) {
+
+    cleanup.unref();
+
+  }
+
+
+  return (
+
+    "/tts/" +
+    filename
+
+  );
+
+}
 
 
 // ======================================================
@@ -652,7 +821,7 @@ app.get(
 
 
 // ======================================================
-// VIEWER PAGE
+// CREATOR VIEWER PAGE
 // ======================================================
 
 app.get(
@@ -695,9 +864,11 @@ app.get(
 
     }
 
-    catch (e) {
+    catch (error) {
 
-      console.error(e);
+      console.error(
+        error
+      );
 
 
       res
@@ -768,9 +939,11 @@ app.post(
 
 
       const slug =
+
         slugify(
 
           req.body.slug ||
+
           displayName
 
         );
@@ -780,8 +953,7 @@ app.post(
 
         !email ||
 
-        password.length <
-          6 ||
+        password.length < 6 ||
 
         !displayName ||
 
@@ -802,6 +974,7 @@ app.post(
 
 
       const emailCheck =
+
         await client.query(
 
           "SELECT id FROM users WHERE email=$1",
@@ -828,6 +1001,7 @@ app.post(
 
 
       const slugCheck =
+
         await client.query(
 
           "SELECT id FROM creators WHERE slug=$1",
@@ -862,6 +1036,7 @@ app.post(
 
 
       const passwordHash =
+
         await bcrypt.hash(
 
           password,
@@ -1021,7 +1196,7 @@ app.post(
 
     }
 
-    catch (e) {
+    catch (error) {
 
       try {
 
@@ -1034,7 +1209,9 @@ app.post(
       catch {}
 
 
-      console.error(e);
+      console.error(
+        error
+      );
 
 
       res
@@ -1086,7 +1263,8 @@ app.post(
           .toLowerCase();
 
 
-      const r =
+      const result =
+
         await pool.query(
 
           "SELECT * FROM users WHERE email=$1",
@@ -1096,13 +1274,13 @@ app.post(
         );
 
 
-      const u =
-        r.rows[0];
+      const user =
+        result.rows[0];
 
 
       if (
 
-        !u ||
+        !user ||
 
         !(
           await bcrypt.compare(
@@ -1112,7 +1290,7 @@ app.post(
               ""
             ),
 
-            u.password_hash
+            user.password_hash
 
           )
         )
@@ -1132,12 +1310,12 @@ app.post(
 
 
       req.session.userId =
-        u.id;
+        user.id;
 
 
-      const c =
+      const creator =
         await creatorById(
-          u.creator_id
+          user.creator_id
         );
 
 
@@ -1147,15 +1325,17 @@ app.post(
           true,
 
         slug:
-          c?.slug
+          creator?.slug
 
       });
 
     }
 
-    catch (e) {
+    catch (error) {
 
-      console.error(e);
+      console.error(
+        error
+      );
 
 
       res
@@ -1189,10 +1369,13 @@ app.post(
 
     req.session.destroy(
 
-      () =>
+      () => {
+
         res.json({
           ok: true
-        })
+        });
+
+      }
 
     );
 
@@ -1202,7 +1385,7 @@ app.post(
 
 
 // ======================================================
-// CURRENT LOGGED IN USER
+// LOGIN STATUS
 // ======================================================
 
 app.get(
@@ -1216,11 +1399,13 @@ app.get(
 
     try {
 
-      const u =
-        await currentUser(req);
+      const user =
+        await currentUser(
+          req
+        );
 
 
-      if (!u) {
+      if (!user) {
 
         return res
           .status(401)
@@ -1234,28 +1419,29 @@ app.get(
       }
 
 
-      const c =
+      const creator =
         await creatorById(
-          u.creator_id
+          user.creator_id
         );
 
 
       res.json({
 
         email:
-          u.email,
+          user.email,
+
 
         creator:
 
-          c
+          creator
 
             ? {
 
                 slug:
-                  c.slug,
+                  creator.slug,
 
                 displayName:
-                  c.display_name
+                  creator.display_name
 
               }
 
@@ -1265,9 +1451,11 @@ app.get(
 
     }
 
-    catch (e) {
+    catch (error) {
 
-      console.error(e);
+      console.error(
+        error
+      );
 
 
       res
@@ -1287,7 +1475,7 @@ app.get(
 
 
 // ======================================================
-// PUBLIC CREATOR DATA
+// PUBLIC CREATOR API
 // ======================================================
 
 app.get(
@@ -1301,13 +1489,13 @@ app.get(
 
     try {
 
-      const c =
+      const creator =
         await creatorBySlug(
           req.params.slug
         );
 
 
-      if (!c) {
+      if (!creator) {
 
         return res
           .status(404)
@@ -1322,14 +1510,20 @@ app.get(
 
 
       res.json(
-        publicCreator(c)
+
+        publicCreator(
+          creator
+        )
+
       );
 
     }
 
-    catch (e) {
+    catch (error) {
 
-      console.error(e);
+      console.error(
+        error
+      );
 
 
       res
@@ -1365,11 +1559,12 @@ app.get(
 
     try {
 
-      const c =
+      const creator =
         req.creator;
 
 
       const tx =
+
         await pool.query(
 
           `
@@ -1379,7 +1574,9 @@ app.get(
           ORDER BY created_at DESC
           `,
 
-          [c.id]
+          [
+            creator.id
+          ]
 
         );
 
@@ -1389,6 +1586,7 @@ app.get(
 
 
       const paid =
+
         rows.filter(
 
           x =>
@@ -1404,16 +1602,18 @@ app.get(
 
 
       const gross =
+
         paid.reduce(
 
           (
-            a,
-            b
+            total,
+            row
           ) =>
 
-            a +
+            total +
+
             Number(
-              b.amount ||
+              row.amount ||
               0
             ),
 
@@ -1423,16 +1623,18 @@ app.get(
 
 
       const platformFee =
+
         paid.reduce(
 
           (
-            a,
-            b
+            total,
+            row
           ) =>
 
-            a +
+            total +
+
             Number(
-              b.platform_fee ||
+              row.platform_fee ||
               0
             ),
 
@@ -1442,16 +1644,18 @@ app.get(
 
 
       const creatorNet =
+
         paid.reduce(
 
           (
-            a,
-            b
+            total,
+            row
           ) =>
 
-            a +
+            total +
+
             Number(
-              b.creator_net ||
+              row.creator_net ||
               0
             ),
 
@@ -1461,39 +1665,40 @@ app.get(
 
 
       const transactions =
+
         rows.map(
 
-          x => ({
+          row => ({
 
             id:
-              x.id,
+              row.id,
 
             viewer:
-              x.viewer,
+              row.viewer,
 
             message:
-              x.message,
+              row.message,
 
             amount:
               Number(
-                x.amount
+                row.amount
               ),
 
             platformFee:
               Number(
-                x.platform_fee
+                row.platform_fee
               ),
 
             creatorNet:
               Number(
-                x.creator_net
+                row.creator_net
               ),
 
             status:
-              x.status,
+              row.status,
 
             createdAt:
-              x.created_at
+              row.created_at
 
           })
 
@@ -1503,38 +1708,38 @@ app.get(
       res.json({
 
         id:
-          c.id,
+          creator.id,
 
         slug:
-          c.slug,
+          creator.slug,
 
         displayName:
-          c.display_name,
+          creator.display_name,
 
         currency:
-          c.currency,
+          creator.currency,
 
         platformFeePercent:
           Number(
-            c.platform_fee_percent
+            creator.platform_fee_percent
           ),
 
         paymentMode:
-          c.payment_mode,
+          creator.payment_mode,
 
         payout:
-          c.payout,
+          creator.payout,
 
         messageTiers:
-          c.message_tiers ||
+          creator.message_tiers ||
           [],
 
         sounds:
-          c.sounds ||
+          creator.sounds ||
           [],
 
         memes:
-          c.memes ||
+          creator.memes ||
           [],
 
 
@@ -1551,15 +1756,16 @@ app.get(
             rows.length,
 
           activeSounds:
+
             (
-              c.sounds ||
+              creator.sounds ||
               []
             )
 
               .filter(
 
-                x =>
-                  x.enabled
+                sound =>
+                  sound.enabled
 
               )
 
@@ -1574,9 +1780,11 @@ app.get(
 
     }
 
-    catch (e) {
+    catch (error) {
 
-      console.error(e);
+      console.error(
+        error
+      );
 
 
       res
@@ -1596,290 +1804,7 @@ app.get(
 
 
 // ======================================================
-// FREE SERVER-SIDE TTS
-// ======================================================
-
-function proxyTtsRequest(
-  targetUrl,
-  res,
-  redirectsLeft = 2
-) {
-
-  const request =
-    https.get(
-
-      targetUrl,
-
-      {
-
-        headers: {
-
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-
-          "Accept":
-            "audio/mpeg,audio/*;q=0.9,*/*;q=0.8",
-
-          "Accept-Language":
-            "en-IN,en;q=0.9",
-
-          "Referer":
-            "https://translate.google.com/"
-
-        },
-
-        timeout:
-          10000
-
-      },
-
-      upstream => {
-
-        const status =
-          upstream.statusCode ||
-          500;
-
-
-        if (
-
-          status >= 300 &&
-
-          status < 400 &&
-
-          upstream.headers.location &&
-
-          redirectsLeft > 0
-
-        ) {
-
-          upstream.resume();
-
-
-          return proxyTtsRequest(
-
-            new URL(
-              upstream.headers.location,
-              targetUrl
-            ).toString(),
-
-            res,
-
-            redirectsLeft - 1
-
-          );
-
-        }
-
-
-        if (
-          status !== 200
-        ) {
-
-          upstream.resume();
-
-
-          if (
-            !res.headersSent
-          ) {
-
-            res
-              .status(502)
-              .send(
-                "TTS provider failed"
-              );
-
-          }
-
-
-          return;
-
-        }
-
-
-        res.setHeader(
-
-          "Content-Type",
-
-          upstream.headers[
-            "content-type"
-          ]
-
-          ||
-
-          "audio/mpeg"
-
-        );
-
-
-        res.setHeader(
-
-          "Cache-Control",
-
-          "no-store, max-age=0"
-
-        );
-
-
-        res.setHeader(
-
-          "Pragma",
-
-          "no-cache"
-
-        );
-
-
-        upstream.pipe(
-          res
-        );
-
-      }
-
-    );
-
-
-  request.on(
-
-    "timeout",
-
-    () => {
-
-      request.destroy(
-
-        new Error(
-          "TTS request timeout"
-        )
-
-      );
-
-    }
-
-  );
-
-
-  request.on(
-
-    "error",
-
-    error => {
-
-      console.error(
-
-        "TTS proxy error:",
-
-        error.message
-
-      );
-
-
-      if (
-        !res.headersSent
-      ) {
-
-        res
-          .status(502)
-          .send(
-            "TTS failed"
-          );
-
-      }
-
-      else {
-
-        res.end();
-
-      }
-
-    }
-
-  );
-
-}
-
-
-
-app.get(
-
-  "/api/tts",
-
-  (
-    req,
-    res
-  ) => {
-
-    const text =
-
-      String(
-        req.query.text ||
-        ""
-      )
-
-        .replace(
-          /\s+/g,
-          " "
-        )
-
-        .trim()
-
-        .slice(
-          0,
-          180
-        );
-
-
-    if (!text) {
-
-      return res
-        .status(400)
-        .send(
-          "Missing text"
-        );
-
-    }
-
-
-    const ttsUrl =
-
-      "https://translate.google.com/translate_tts"
-
-      +
-
-      "?ie=UTF-8"
-
-      +
-
-      "&client=tw-ob"
-
-      +
-
-      "&tl=en-IN"
-
-      +
-
-      "&q="
-
-      +
-
-      encodeURIComponent(
-        text
-      );
-
-
-    proxyTtsRequest(
-
-      ttsUrl,
-
-      res
-
-    );
-
-  }
-
-);
-
-
-// ======================================================
-// TEST PAYMENT + 5 SECOND ANTI-SPAM
+// TEST PAYMENT + 3 SECOND ANTI-SPAM
 // ======================================================
 
 app.post(
@@ -1893,13 +1818,13 @@ app.post(
 
     try {
 
-      const c =
+      const creator =
         await creatorBySlug(
           req.params.slug
         );
 
 
-      if (!c) {
+      if (!creator) {
 
         return res
           .status(404)
@@ -1914,12 +1839,12 @@ app.post(
 
 
       // ===============================================
-      // ANTI-SPAM
+      // ANTI SPAM
       // ===============================================
 
       const spamKey =
 
-        `${c.slug}:${req.ip}`;
+        `${creator.slug}:${req.ip}`;
 
 
       const now =
@@ -1981,6 +1906,7 @@ app.post(
 
 
       const cleanupTimer =
+
         setTimeout(
 
           () => {
@@ -2022,7 +1948,7 @@ app.post(
 
 
       // ===============================================
-      // PAYMENT DATA
+      // VIEWER DATA
       // ===============================================
 
       const body =
@@ -2031,6 +1957,7 @@ app.post(
 
 
       const gross =
+
         Math.max(
 
           0,
@@ -2044,9 +1971,10 @@ app.post(
 
 
       const feePct =
+
         Number(
 
-          c.platform_fee_percent ||
+          creator.platform_fee_percent ||
           10
 
         );
@@ -2085,21 +2013,22 @@ app.post(
 
 
       const sounds =
-        c.sounds ||
+        creator.sounds ||
         [];
 
 
       const memes =
-        c.memes ||
+        creator.memes ||
         [];
 
 
       const sound =
+
         sounds.find(
 
-          x =>
+          item =>
 
-            x.id ===
+            item.id ===
             String(
               body.soundId ||
               ""
@@ -2107,17 +2036,18 @@ app.post(
 
             &&
 
-            x.enabled
+            item.enabled
 
         );
 
 
       const meme =
+
         memes.find(
 
-          x =>
+          item =>
 
-            x.id ===
+            item.id ===
             String(
               body.memeId ||
               ""
@@ -2125,7 +2055,7 @@ app.post(
 
             &&
 
-            x.enabled
+            item.enabled
 
         );
 
@@ -2133,7 +2063,7 @@ app.post(
       const safe = {
 
         creatorSlug:
-          c.slug,
+          creator.slug,
 
 
         name:
@@ -2193,15 +2123,72 @@ app.post(
 
 
         soundFile:
+
           sound?.file ||
           "",
 
 
         memeFile:
+
           meme?.file ||
+          "",
+
+
+        voiceFile:
           ""
 
       };
+
+
+      // ===============================================
+      // CREATE TTS FIRST
+      // ===============================================
+
+      const voiceText =
+
+        buildVoiceText(
+
+          safe.name,
+
+          safe.amount,
+
+          safe.message
+
+        );
+
+
+      try {
+
+        safe.voiceFile =
+
+          await createVoiceFile(
+            voiceText
+          );
+
+      }
+
+      catch (ttsError) {
+
+        console.error(
+
+          "TTS generation failed:",
+
+          ttsError.message
+
+        );
+
+
+        /*
+          VERY IMPORTANT:
+
+          TTS fail hone par bhi
+          sound/meme alert continue hoga.
+        */
+
+        safe.voiceFile =
+          "";
+
+      }
 
 
       // ===============================================
@@ -2240,7 +2227,7 @@ app.post(
 
           crypto.randomUUID(),
 
-          c.id,
+          creator.id,
 
           safe.name,
 
@@ -2258,13 +2245,15 @@ app.post(
 
 
       // ===============================================
-      // SEND ALERT TO OBS
+      // SEND TO OBS
       // ===============================================
 
       io
         .to(
+
           "creator:" +
-          c.slug
+          creator.slug
+
         )
 
         .emit(
@@ -2296,9 +2285,11 @@ app.post(
 
     }
 
-    catch (e) {
+    catch (error) {
 
-      console.error(e);
+      console.error(
+        error
+      );
 
 
       res
@@ -2384,9 +2375,11 @@ app.post(
 
     }
 
-    catch (e) {
+    catch (error) {
 
-      console.error(e);
+      console.error(
+        error
+      );
 
 
       res
@@ -2443,10 +2436,11 @@ app.post(
 
 
       const item =
+
         list.find(
 
-          x =>
-            x.id ===
+          current =>
+            current.id ===
             req.params.id
 
         );
@@ -2552,9 +2546,11 @@ app.post(
 
     }
 
-    catch (e) {
+    catch (error) {
 
-      console.error(e);
+      console.error(
+        error
+      );
 
 
       res
@@ -2609,8 +2605,8 @@ app.delete(
 
           .filter(
 
-            x =>
-              x.id !==
+            item =>
+              item.id !==
               req.params.id
 
           );
@@ -2643,9 +2639,11 @@ app.delete(
 
     }
 
-    catch (e) {
+    catch (error) {
 
-      console.error(e);
+      console.error(
+        error
+      );
 
 
       res
@@ -2705,9 +2703,10 @@ app.post(
         "sound";
 
 
-      const ext =
+      const extension =
 
         path
+
           .extname(
             req.file.filename
           )
@@ -2724,7 +2723,7 @@ app.post(
           ".wav",
           ".m4a"
         ].includes(
-          ext
+          extension
         )
 
       ) {
@@ -2750,7 +2749,7 @@ app.post(
           ".gif",
           ".webm"
         ].includes(
-          ext
+          extension
         )
 
       ) {
@@ -2874,9 +2873,11 @@ app.post(
 
     }
 
-    catch (e) {
+    catch (error) {
 
-      console.error(e);
+      console.error(
+        error
+      );
 
 
       res
@@ -2934,10 +2935,11 @@ io.on(
 
 
 // ======================================================
-// START SERVER
+// START
 // ======================================================
 
 const PORT =
+
   process.env.PORT ||
   3000;
 
@@ -2974,14 +2976,14 @@ initDB()
 
   .catch(
 
-    err => {
+    error => {
 
 
       console.error(
 
         "Database startup failed:",
 
-        err
+        error
 
       );
 
