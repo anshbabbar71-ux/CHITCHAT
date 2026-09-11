@@ -1,5 +1,6 @@
 const express = require("express");
 const http = require("http");
+const https = require("https");
 const { Server } = require("socket.io");
 const multer = require("multer");
 const path = require("path");
@@ -10,51 +11,29 @@ const session = require("express-session");
 const { Pool } = require("pg");
 const pgSession = require("connect-pg-simple")(session);
 
-
-// ======================================================
-// APP + SOCKET.IO
-// ======================================================
-
 const app = express();
-
 const server = http.createServer(app);
-
 const io = new Server(server);
 
-
-// ======================================================
-// ANTI-SPAM
-// ======================================================
-
-const testAlertCooldown = new Map();
-
-const TEST_ALERT_COOLDOWN_MS = 5000;
-
-
-// ======================================================
-// PATHS / ENVIRONMENT
-// ======================================================
-
-const MEDIA_DIR = path.join(
-  __dirname,
-  "public",
-  "media"
-);
-
-
-// Make sure media folder exists
-if (!fs.existsSync(MEDIA_DIR)) {
-  fs.mkdirSync(
-    MEDIA_DIR,
-    { recursive: true }
-  );
-}
-
+const MEDIA_DIR = path.join(__dirname, "public", "media");
 
 const SESSION_SECRET =
   process.env.SESSION_SECRET ||
   "local-dev-only-secret";
 
+
+// ======================================================
+// TEST ALERT ANTI-SPAM
+// ======================================================
+
+const TEST_ALERT_COOLDOWN_MS = 5000;
+
+const testAlertCooldown = new Map();
+
+
+// ======================================================
+// DATABASE CHECK
+// ======================================================
 
 if (!process.env.DATABASE_URL) {
 
@@ -63,7 +42,21 @@ if (!process.env.DATABASE_URL) {
   );
 
   process.exit(1);
+}
 
+
+// ======================================================
+// MAKE SURE MEDIA FOLDER EXISTS
+// ======================================================
+
+if (!fs.existsSync(MEDIA_DIR)) {
+
+  fs.mkdirSync(
+    MEDIA_DIR,
+    {
+      recursive: true
+    }
+  );
 }
 
 
@@ -80,7 +73,7 @@ const pool = new Pool({
 
 
 // ======================================================
-// EXPRESS SETTINGS
+// EXPRESS
 // ======================================================
 
 app.set(
@@ -90,19 +83,29 @@ app.set(
 
 
 app.use(
-  express.json()
+
+  express.json({
+    limit: "1mb"
+  })
+
 );
 
 
 app.use(
+
   express.urlencoded({
-    extended: true
+
+    extended: true,
+
+    limit: "1mb"
+
   })
+
 );
 
 
 // ======================================================
-// SESSION STORE
+// SESSION
 // ======================================================
 
 app.use(
@@ -157,7 +160,7 @@ app.use(
 
 
 // ======================================================
-// STATIC FILES
+// STATIC WEBSITE FILES
 // ======================================================
 
 app.use(
@@ -203,6 +206,7 @@ function cleanName(s) {
 }
 
 
+
 function slugify(s) {
 
   return String(s || "")
@@ -227,6 +231,7 @@ function slugify(s) {
     );
 
 }
+
 
 
 function publicCreator(c) {
@@ -408,11 +413,7 @@ async function creatorBySlug(slug) {
   const r =
     await pool.query(
 
-      `
-      SELECT *
-      FROM creators
-      WHERE slug=$1
-      `,
+      "SELECT * FROM creators WHERE slug=$1",
 
       [slug]
 
@@ -427,16 +428,13 @@ async function creatorBySlug(slug) {
 }
 
 
+
 async function creatorById(id) {
 
   const r =
     await pool.query(
 
-      `
-      SELECT *
-      FROM creators
-      WHERE id=$1
-      `,
+      "SELECT * FROM creators WHERE id=$1",
 
       [id]
 
@@ -449,6 +447,7 @@ async function creatorById(id) {
   );
 
 }
+
 
 
 async function currentUser(req) {
@@ -465,11 +464,7 @@ async function currentUser(req) {
   const r =
     await pool.query(
 
-      `
-      SELECT *
-      FROM users
-      WHERE id=$1
-      `,
+      "SELECT * FROM users WHERE id=$1",
 
       [
         req.session.userId
@@ -487,7 +482,7 @@ async function currentUser(req) {
 
 
 // ======================================================
-// LOGIN PROTECTION
+// CREATOR LOGIN PROTECTION
 // ======================================================
 
 async function requireCreator(
@@ -568,7 +563,7 @@ async function requireCreator(
 
 
 // ======================================================
-// FILE UPLOAD SETTINGS
+// FILE UPLOAD
 // ======================================================
 
 const storage =
@@ -633,8 +628,13 @@ const upload =
 // ======================================================
 
 app.get(
+
   "/",
-  (req, res) => {
+
+  (
+    req,
+    res
+  ) => {
 
     res.sendFile(
 
@@ -647,14 +647,16 @@ app.get(
     );
 
   }
+
 );
 
 
 // ======================================================
-// PUBLIC VIEWER PAGE
+// VIEWER PAGE
 // ======================================================
 
 app.get(
+
   "/creator/:slug",
 
   async (
@@ -707,6 +709,7 @@ app.get(
     }
 
   }
+
 );
 
 
@@ -777,7 +780,8 @@ app.post(
 
         !email ||
 
-        password.length < 6 ||
+        password.length <
+          6 ||
 
         !displayName ||
 
@@ -800,11 +804,7 @@ app.post(
       const emailCheck =
         await client.query(
 
-          `
-          SELECT id
-          FROM users
-          WHERE email=$1
-          `,
+          "SELECT id FROM users WHERE email=$1",
 
           [email]
 
@@ -830,11 +830,7 @@ app.post(
       const slugCheck =
         await client.query(
 
-          `
-          SELECT id
-          FROM creators
-          WHERE slug=$1
-          `,
+          "SELECT id FROM creators WHERE slug=$1",
 
           [slug]
 
@@ -1093,11 +1089,7 @@ app.post(
       const r =
         await pool.query(
 
-          `
-          SELECT *
-          FROM users
-          WHERE email=$1
-          `,
+          "SELECT * FROM users WHERE email=$1",
 
           [email]
 
@@ -1197,13 +1189,10 @@ app.post(
 
     req.session.destroy(
 
-      () => {
-
+      () =>
         res.json({
           ok: true
-        });
-
-      }
+        })
 
     );
 
@@ -1213,7 +1202,7 @@ app.post(
 
 
 // ======================================================
-// AUTH ME
+// CURRENT LOGGED IN USER
 // ======================================================
 
 app.get(
@@ -1257,6 +1246,7 @@ app.get(
           u.email,
 
         creator:
+
           c
 
             ? {
@@ -1297,7 +1287,7 @@ app.get(
 
 
 // ======================================================
-// PUBLIC CREATOR API
+// PUBLIC CREATOR DATA
 // ======================================================
 
 app.get(
@@ -1564,10 +1554,16 @@ app.get(
             (
               c.sounds ||
               []
-            ).filter(
-              x =>
-                x.enabled
-            ).length
+            )
+
+              .filter(
+
+                x =>
+                  x.enabled
+
+              )
+
+              .length
 
         },
 
@@ -1600,7 +1596,290 @@ app.get(
 
 
 // ======================================================
-// TEST PAYMENT + ANTI-SPAM
+// FREE SERVER-SIDE TTS
+// ======================================================
+
+function proxyTtsRequest(
+  targetUrl,
+  res,
+  redirectsLeft = 2
+) {
+
+  const request =
+    https.get(
+
+      targetUrl,
+
+      {
+
+        headers: {
+
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+
+          "Accept":
+            "audio/mpeg,audio/*;q=0.9,*/*;q=0.8",
+
+          "Accept-Language":
+            "en-IN,en;q=0.9",
+
+          "Referer":
+            "https://translate.google.com/"
+
+        },
+
+        timeout:
+          10000
+
+      },
+
+      upstream => {
+
+        const status =
+          upstream.statusCode ||
+          500;
+
+
+        if (
+
+          status >= 300 &&
+
+          status < 400 &&
+
+          upstream.headers.location &&
+
+          redirectsLeft > 0
+
+        ) {
+
+          upstream.resume();
+
+
+          return proxyTtsRequest(
+
+            new URL(
+              upstream.headers.location,
+              targetUrl
+            ).toString(),
+
+            res,
+
+            redirectsLeft - 1
+
+          );
+
+        }
+
+
+        if (
+          status !== 200
+        ) {
+
+          upstream.resume();
+
+
+          if (
+            !res.headersSent
+          ) {
+
+            res
+              .status(502)
+              .send(
+                "TTS provider failed"
+              );
+
+          }
+
+
+          return;
+
+        }
+
+
+        res.setHeader(
+
+          "Content-Type",
+
+          upstream.headers[
+            "content-type"
+          ]
+
+          ||
+
+          "audio/mpeg"
+
+        );
+
+
+        res.setHeader(
+
+          "Cache-Control",
+
+          "no-store, max-age=0"
+
+        );
+
+
+        res.setHeader(
+
+          "Pragma",
+
+          "no-cache"
+
+        );
+
+
+        upstream.pipe(
+          res
+        );
+
+      }
+
+    );
+
+
+  request.on(
+
+    "timeout",
+
+    () => {
+
+      request.destroy(
+
+        new Error(
+          "TTS request timeout"
+        )
+
+      );
+
+    }
+
+  );
+
+
+  request.on(
+
+    "error",
+
+    error => {
+
+      console.error(
+
+        "TTS proxy error:",
+
+        error.message
+
+      );
+
+
+      if (
+        !res.headersSent
+      ) {
+
+        res
+          .status(502)
+          .send(
+            "TTS failed"
+          );
+
+      }
+
+      else {
+
+        res.end();
+
+      }
+
+    }
+
+  );
+
+}
+
+
+
+app.get(
+
+  "/api/tts",
+
+  (
+    req,
+    res
+  ) => {
+
+    const text =
+
+      String(
+        req.query.text ||
+        ""
+      )
+
+        .replace(
+          /\s+/g,
+          " "
+        )
+
+        .trim()
+
+        .slice(
+          0,
+          180
+        );
+
+
+    if (!text) {
+
+      return res
+        .status(400)
+        .send(
+          "Missing text"
+        );
+
+    }
+
+
+    const ttsUrl =
+
+      "https://translate.google.com/translate_tts"
+
+      +
+
+      "?ie=UTF-8"
+
+      +
+
+      "&client=tw-ob"
+
+      +
+
+      "&tl=en-IN"
+
+      +
+
+      "&q="
+
+      +
+
+      encodeURIComponent(
+        text
+      );
+
+
+    proxyTtsRequest(
+
+      ttsUrl,
+
+      res
+
+    );
+
+  }
+
+);
+
+
+// ======================================================
+// TEST PAYMENT + 5 SECOND ANTI-SPAM
 // ======================================================
 
 app.post(
@@ -1634,15 +1913,13 @@ app.post(
       }
 
 
-      // =================================================
-      // 5 SECOND SERVER-SIDE ANTI-SPAM
-      // =================================================
+      // ===============================================
+      // ANTI-SPAM
+      // ===============================================
 
       const spamKey =
 
-        c.slug +
-        ":" +
-        req.ip;
+        `${c.slug}:${req.ip}`;
 
 
       const now =
@@ -1662,7 +1939,9 @@ app.post(
 
       const remaining =
 
-        TEST_ALERT_COOLDOWN_MS -
+        TEST_ALERT_COOLDOWN_MS
+
+        -
 
         (
           now -
@@ -1680,21 +1959,17 @@ app.post(
 
             error:
 
-              "Please wait " +
+              `Please wait ${Math.ceil(
 
-              Math.ceil(
                 remaining /
                 1000
-              ) +
 
-              " seconds before sending again."
+              )} seconds before sending again.`
 
           });
 
       }
 
-
-      // First request accepted
 
       testAlertCooldown.set(
 
@@ -1705,8 +1980,6 @@ app.post(
       );
 
 
-      // Remove cooldown record later
-
       const cleanupTimer =
         setTimeout(
 
@@ -1716,7 +1989,11 @@ app.post(
 
               testAlertCooldown.get(
                 spamKey
-              ) === now
+              )
+
+              ===
+
+              now
 
             ) {
 
@@ -1728,7 +2005,8 @@ app.post(
 
           },
 
-          TEST_ALERT_COOLDOWN_MS +
+          TEST_ALERT_COOLDOWN_MS
+          +
           1000
 
         );
@@ -1743,9 +2021,9 @@ app.post(
       }
 
 
-      // =================================================
-      // PAYMENT TEST DATA
-      // =================================================
+      // ===============================================
+      // PAYMENT DATA
+      // ===============================================
 
       const body =
         req.body ||
@@ -1782,6 +2060,7 @@ app.post(
         )
 
         /
+
         100;
 
 
@@ -1864,6 +2143,8 @@ app.post(
             "Viewer"
           )
 
+            .trim()
+
             .slice(
               0,
               30
@@ -1876,6 +2157,8 @@ app.post(
             body.message ||
             ""
           )
+
+            .trim()
 
             .slice(
               0,
@@ -1921,9 +2204,9 @@ app.post(
       };
 
 
-      // =================================================
+      // ===============================================
       // SAVE TRANSACTION
-      // =================================================
+      // ===============================================
 
       await pool.query(
 
@@ -1974,15 +2257,16 @@ app.post(
       );
 
 
-      // =================================================
+      // ===============================================
       // SEND ALERT TO OBS
-      // =================================================
+      // ===============================================
 
       io
         .to(
           "creator:" +
           c.slug
         )
+
         .emit(
 
           "show-alert",
@@ -2424,7 +2708,6 @@ app.post(
       const ext =
 
         path
-
           .extname(
             req.file.filename
           )
@@ -2662,7 +2945,9 @@ const PORT =
 initDB()
 
   .then(
+
     () => {
+
 
       server.listen(
 
@@ -2671,6 +2956,7 @@ initDB()
         "0.0.0.0",
 
         () => {
+
 
           console.log(
 
@@ -2683,10 +2969,13 @@ initDB()
       );
 
     }
+
   )
 
   .catch(
+
     err => {
+
 
       console.error(
 
@@ -2700,4 +2989,5 @@ initDB()
       process.exit(1);
 
     }
+
   );
