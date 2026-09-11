@@ -1,274 +1,539 @@
 <!doctype html>
+
 <html>
 
 <head>
-<meta charset="utf-8">
 
-<style>
+  <meta charset="utf-8">
 
-html, body {
-  margin: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: transparent;
-  font-family: Arial, sans-serif;
-}
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
-
-/* MEME / VIDEO */
-
-#m {
-  position: absolute;
-
-  left: 50%;
-  top: 8%;
-
-  transform:
-    translateX(-50%)
-    scale(0.96);
-
-  max-width: 520px;
-  max-height: 55%;
-
-  opacity: 0;
-
-  transition: 0.25s ease;
-}
+  <title>
+    CHITCHAT OBS Overlay
+  </title>
 
 
-#m.show {
-  opacity: 1;
+  <style>
 
-  transform:
-    translateX(-50%)
-    scale(1);
-}
+    html,
+    body {
 
+      margin: 0;
 
-/* TEXT ALERT */
+      width: 100%;
 
-#t {
-  position: absolute;
+      height: 100%;
 
-  left: 50%;
-  bottom: 10%;
+      overflow: hidden;
 
-  transform:
-    translateX(-50%)
-    translateY(20px);
+      background: transparent;
 
-  opacity: 0;
+      font-family:
+        Arial,
+        sans-serif;
 
-  color: white;
-
-  text-align: center;
-
-  max-width: 85%;
-
-  padding: 16px 24px;
-
-  border-radius: 18px;
-
-  background:
-    rgba(10,10,18,0.65);
-
-  border:
-    1px solid
-    rgba(255,255,255,0.16);
-
-  box-shadow:
-    0 10px 35px
-    rgba(0,0,0,0.35);
-
-  text-shadow:
-    0 3px 14px black;
-
-  transition:
-    0.25s ease;
-}
+    }
 
 
-#t.show {
-  opacity: 1;
-
-  transform:
-    translateX(-50%)
-    translateY(0);
-}
+    /* =================================
+       MEME / VIDEO
+    ================================= */
 
 
-#n {
-  font-size: 30px;
-  font-weight: 900;
-}
+    #m {
+
+      position: absolute;
+
+      left: 50%;
+
+      top: 8%;
+
+      transform:
+        translateX(-50%)
+        scale(0.96);
+
+      max-width: 520px;
+
+      max-height: 55%;
+
+      opacity: 0;
+
+      transition:
+        0.25s ease;
+
+      border-radius:
+        18px;
+
+      filter:
+
+        drop-shadow(
+          0 12px 30px
+          rgba(0,0,0,0.45)
+        );
+
+    }
 
 
-#msg {
-  font-size: 24px;
+    #m.show {
 
-  margin-top: 6px;
-}
+      opacity: 1;
+
+      transform:
+        translateX(-50%)
+        scale(1);
+
+    }
 
 
-#amt {
-  font-size: 20px;
+    /* =================================
+       TEXT ALERT
+    ================================= */
 
-  font-weight: 800;
 
-  margin-top: 6px;
+    #t {
 
-  color: #d9a6ff;
-}
+      position: absolute;
 
-</style>
+      left: 50%;
+
+      bottom: 10%;
+
+      transform:
+
+        translateX(-50%)
+
+        translateY(20px);
+
+
+      opacity: 0;
+
+
+      color: white;
+
+
+      text-align:
+        center;
+
+
+      max-width:
+        85%;
+
+
+      padding:
+
+        16px
+
+        24px;
+
+
+      border-radius:
+        18px;
+
+
+      background:
+
+        rgba(
+          10,
+          10,
+          18,
+          0.65
+        );
+
+
+      border:
+
+        1px solid
+
+        rgba(
+          255,
+          255,
+          255,
+          0.16
+        );
+
+
+      box-shadow:
+
+        0 10px 35px
+
+        rgba(
+          0,
+          0,
+          0,
+          0.35
+        );
+
+
+      text-shadow:
+
+        0 3px 14px
+
+        black;
+
+
+      transition:
+
+        0.25s ease;
+
+    }
+
+
+    #t.show {
+
+      opacity: 1;
+
+      transform:
+
+        translateX(-50%)
+
+        translateY(0);
+
+    }
+
+
+    #n {
+
+      font-size:
+        30px;
+
+      font-weight:
+        900;
+
+    }
+
+
+    #msg {
+
+      font-size:
+        24px;
+
+      margin-top:
+        6px;
+
+      line-height:
+        1.3;
+
+    }
+
+
+    #amt {
+
+      font-size:
+        20px;
+
+      font-weight:
+        800;
+
+      margin-top:
+        6px;
+
+      color:
+        #d9a6ff;
+
+    }
+
+  </style>
+
 </head>
+
 
 
 <body>
 
 
-<div id="media"></div>
+  <div id="media"></div>
 
 
-<div id="t">
+  <div id="t">
 
-  <div id="n"></div>
+    <div id="n"></div>
 
-  <div id="msg"></div>
+    <div id="msg"></div>
 
-  <div id="amt"></div>
+    <div id="amt"></div>
 
-</div>
-
-
-
-<script src="/socket.io/socket.io.js"></script>
-
-
-<script>
-
-
-// ======================================
-// CREATOR
-// ======================================
-
-const slug =
-
-  new URLSearchParams(
-    window.location.search
-  ).get("creator")
-
-  ||
-
-  "ansh";
-
-
-const socket = io();
-
-
-socket.emit(
-  "join-creator",
-  slug
-);
+  </div>
 
 
 
-// ======================================
-// HTML ELEMENTS
-// ======================================
-
-const mediaBox =
-  document.getElementById("media");
+  <script
+    src="/socket.io/socket.io.js"
+  ></script>
 
 
-const alertBox =
-  document.getElementById("t");
+  <script>
 
 
-const nameBox =
-  document.getElementById("n");
+    // =====================================
+    // CREATOR
+    // =====================================
 
 
-const messageBox =
-  document.getElementById("msg");
+    const slug =
 
+      new URLSearchParams(
 
-const amountBox =
-  document.getElementById("amt");
+        window.location.search
 
-
-
-// ======================================
-// ALERT QUEUE
-// ======================================
-
-const alertQueue = [];
-
-
-let busy = false;
-
-
-
-function wait(ms) {
-
-  return new Promise(
-    resolve =>
-      setTimeout(
-        resolve,
-        ms
+      ).get(
+        "creator"
       )
-  );
 
-}
+      ||
 
-
-
-// ======================================
-// SPLIT LONG MESSAGE
-// ======================================
-
-function splitText(
-  text,
-  maxLength = 170
-) {
-
-  const words =
-
-    String(text || "")
-
-      .trim()
-
-      .split(/\s+/);
+      "ansh";
 
 
-  const parts = [];
+
+    const socket =
+      io();
 
 
-  let current = "";
+
+    socket.emit(
+
+      "join-creator",
+
+      slug
+
+    );
 
 
-  for (
-    const word of words
-  ) {
+
+    // =====================================
+    // HTML ELEMENTS
+    // =====================================
 
 
-    const next =
+    const mediaBox =
 
-      current
-
-        ? current + " " + word
-
-        : word;
+      document.getElementById(
+        "media"
+      );
 
 
-    if (
-      next.length >
-      maxLength
+    const alertBox =
+
+      document.getElementById(
+        "t"
+      );
+
+
+    const nameBox =
+
+      document.getElementById(
+        "n"
+      );
+
+
+    const messageBox =
+
+      document.getElementById(
+        "msg"
+      );
+
+
+    const amountBox =
+
+      document.getElementById(
+        "amt"
+      );
+
+
+
+    // =====================================
+    // ALERT QUEUE
+    // =====================================
+
+
+    const alertQueue =
+      [];
+
+
+    let busy =
+      false;
+
+
+
+    function wait(ms) {
+
+
+      return new Promise(
+
+        resolve =>
+
+          setTimeout(
+
+            resolve,
+
+            ms
+
+          )
+
+      );
+
+    }
+
+
+
+    // =====================================
+    // SPLIT LONG TTS MESSAGE
+    // =====================================
+
+
+    function splitText(
+
+      text,
+
+      maxLength = 160
+
     ) {
 
 
-      if (current) {
+      const words =
+
+        String(
+          text ||
+          ""
+        )
+
+          .trim()
+
+          .split(
+            /\s+/
+          )
+
+          .filter(
+            Boolean
+          );
+
+
+
+      if (
+        !words.length
+      ) {
+
+        return [];
+
+      }
+
+
+
+      const parts =
+        [];
+
+
+      let current =
+        "";
+
+
+
+      for (
+        const word
+        of words
+      ) {
+
+
+        const next =
+
+          current
+
+            ? current +
+              " " +
+              word
+
+            : word;
+
+
+
+        if (
+
+          next.length >
+          maxLength
+
+        ) {
+
+
+          if (
+            current
+          ) {
+
+            parts.push(
+              current
+            );
+
+          }
+
+
+
+          if (
+
+            word.length >
+            maxLength
+
+          ) {
+
+
+            for (
+
+              let i = 0;
+
+              i < word.length;
+
+              i += maxLength
+
+            ) {
+
+
+              parts.push(
+
+                word.slice(
+
+                  i,
+
+                  i +
+                  maxLength
+
+                )
+
+              );
+
+            }
+
+
+            current =
+              "";
+
+          }
+
+          else {
+
+
+            current =
+              word;
+
+          }
+
+        }
+
+        else {
+
+
+          current =
+            next;
+
+        }
+
+      }
+
+
+
+      if (
+        current
+      ) {
 
         parts.push(
           current
@@ -277,415 +542,507 @@ function splitText(
       }
 
 
-      current =
-        word;
+
+      return parts;
 
     }
 
-    else {
-
-      current =
-        next;
-
-    }
-
-  }
 
 
-  if (current) {
-
-    parts.push(
-      current
-    );
-
-  }
+    // =====================================
+    // PLAY ANY AUDIO
+    // =====================================
 
 
-  return parts;
+    function playAudioUrl(
 
-}
+      url,
 
+      maxMs = 20000
 
-
-// ======================================
-// FREE TEXT TO SPEECH
-// ======================================
-
-function playVoicePart(text) {
-
-  return new Promise(
-    resolve => {
+    ) {
 
 
-      if (!text) {
+      return new Promise(
 
-        resolve();
-
-        return;
-
-      }
+        resolve => {
 
 
-      /*
-        Free Google TTS.
+          if (
+            !url
+          ) {
 
-        Testing ke liye.
-        API key nahi chahiye.
-      */
+            resolve();
 
+            return;
 
-      const voiceURL =
-
-        "https://translate.google.com/translate_tts"
-
-        +
-
-        "?ie=UTF-8"
-
-        +
-
-        "&client=tw-ob"
-
-        +
-
-        "&tl=en"
-
-        +
-
-        "&q="
-
-        +
-
-        encodeURIComponent(
-          text
-        );
+          }
 
 
 
-      const audio =
-        new Audio(
-          voiceURL
-        );
+          const audio =
+
+            new Audio(
+              url
+            );
 
 
-      audio.volume =
-        1;
+          audio.preload =
+            "auto";
+
+
+          audio.volume =
+            1;
 
 
 
-      let finished =
-        false;
+          let finished =
+            false;
+
+
+          let safetyTimer =
+            null;
 
 
 
-      function finish() {
+          const finish =
+            () => {
 
 
-        if (
-          finished
-        ) {
+              if (
+                finished
+              ) {
 
-          return;
+                return;
+
+              }
+
+
+              finished =
+                true;
+
+
+
+              if (
+                safetyTimer
+              ) {
+
+                clearTimeout(
+                  safetyTimer
+                );
+
+              }
+
+
+
+              try {
+
+
+                audio.pause();
+
+
+                audio.currentTime =
+                  0;
+
+
+              }
+
+              catch (e) {}
+
+
+              resolve();
+
+            };
+
+
+
+          audio.onended =
+            finish;
+
+
+          audio.onerror =
+            finish;
+
+
+
+          safetyTimer =
+            setTimeout(
+
+              finish,
+
+              maxMs
+
+            );
+
+
+
+          audio
+            .play()
+
+            .catch(
+              finish
+            );
 
         }
 
-
-        finished =
-          true;
-
-
-        try {
-
-          audio.pause();
-
-        }
-
-        catch (e) {}
-
-
-        resolve();
-
-      }
-
-
-
-      audio.onended =
-        finish;
-
-
-      audio.onerror =
-        finish;
-
-
-
-      /*
-        Agar Google voice fail ho,
-        queue forever freeze nahi hogi.
-      */
-
-
-      setTimeout(
-        finish,
-        15000
       );
 
-
-
-      audio
-        .play()
-        .catch(
-          finish
-        );
-
     }
-  );
-
-}
 
 
 
-// ======================================
-// SPEAK COMPLETE MESSAGE
-// ======================================
-
-async function speak(text) {
+    // =====================================
+    // TEXT TO SPEECH
+    // =====================================
 
 
-  const parts =
-    splitText(
+    async function speak(
       text
-    );
+    ) {
 
 
-  for (
-    const part of parts
-  ) {
+      const parts =
 
+        splitText(
 
-    await playVoicePart(
-      part
-    );
+          text,
 
-  }
+          160
 
-}
-
-
-
-// ======================================
-// PLAY SOUNDBOARD
-// ======================================
-
-function playSound(
-  soundFile
-) {
-
-  return new Promise(
-    resolve => {
-
-
-      if (!soundFile) {
-
-        resolve();
-
-        return;
-
-      }
-
-
-      const audio =
-        new Audio(
-          soundFile
         );
 
 
-      let finished =
-        false;
 
+      for (
 
-
-      function finish() {
-
-
-        if (
-          finished
-        ) {
-
-          return;
-
-        }
-
-
-        finished =
-          true;
-
-
-        try {
-
-          audio.pause();
-
-        }
-
-        catch (e) {}
-
-
-        resolve();
-
-      }
-
-
-
-      audio.onended =
-        finish;
-
-
-      audio.onerror =
-        finish;
-
-
-
-      setTimeout(
-        finish,
-        15000
-      );
-
-
-
-      audio
-        .play()
-        .catch(
-          finish
-        );
-
-    }
-  );
-
-}
-
-
-
-// ======================================
-// SHOW MEME / GIF / VIDEO
-// ======================================
-
-function showMeme(
-  memeFile
-) {
-
-  return new Promise(
-    resolve => {
-
-
-      if (!memeFile) {
-
-        resolve();
-
-        return;
-
-      }
-
-
-
-      mediaBox.innerHTML =
-        "";
-
-
-
-      const cleanURL =
-
-        String(
-          memeFile
-        )
-
-          .split("?")[0];
-
-
-
-      const extension =
-
-        cleanURL
-
-          .split(".")
-
-          .pop()
-
-          .toLowerCase();
-
-
-
-      // ==============================
-      // IMAGE / GIF
-      // ==============================
-
-      if (
-
-        extension === "gif"
-
-        ||
-
-        extension === "png"
-
-        ||
-
-        extension === "jpg"
-
-        ||
-
-        extension === "jpeg"
-
-        ||
-
-        extension === "webp"
+        const part
+        of parts
 
       ) {
 
 
-        const image =
+        const voiceUrl =
 
-          document.createElement(
-            "img"
+          "/api/tts?text="
+
+          +
+
+          encodeURIComponent(
+            part
+          )
+
+          +
+
+          "&_="
+
+          +
+
+          Date.now();
+
+
+
+        await playAudioUrl(
+
+          voiceUrl,
+
+          20000
+
+        );
+
+      }
+
+    }
+
+
+
+    // =====================================
+    // PLAY SOUNDBOARD
+    // =====================================
+
+
+    function playSound(
+      soundFile
+    ) {
+
+
+      return playAudioUrl(
+
+        soundFile,
+
+        20000
+
+      );
+
+    }
+
+
+
+    // =====================================
+    // SHOW MEME / GIF / VIDEO
+    // =====================================
+
+
+    function showMeme(
+      memeFile
+    ) {
+
+
+      return new Promise(
+
+        resolve => {
+
+
+          if (
+            !memeFile
+          ) {
+
+            resolve();
+
+            return;
+
+          }
+
+
+
+          mediaBox.innerHTML =
+            "";
+
+
+
+          const cleanUrl =
+
+            String(
+              memeFile
+            )
+
+              .split(
+                "?"
+              )[0];
+
+
+
+          const extension =
+
+            cleanUrl
+
+              .split(
+                "."
+              )
+
+              .pop()
+
+              .toLowerCase();
+
+
+
+          // ==============================
+          // IMAGE / GIF
+          // ==============================
+
+
+          if (
+
+            [
+              "gif",
+              "png",
+              "jpg",
+              "jpeg",
+              "webp"
+            ].includes(
+              extension
+            )
+
+          ) {
+
+
+            const image =
+
+              document.createElement(
+                "img"
+              );
+
+
+            image.src =
+              memeFile;
+
+
+            image.id =
+              "m";
+
+
+            mediaBox.appendChild(
+              image
+            );
+
+
+
+            requestAnimationFrame(
+
+              () => {
+
+
+                image
+
+                  .classList
+
+                  .add(
+                    "show"
+                  );
+
+              }
+
+            );
+
+
+
+            setTimeout(
+
+              () => {
+
+
+                image
+
+                  .classList
+
+                  .remove(
+                    "show"
+                  );
+
+
+
+                setTimeout(
+
+                  () => {
+
+
+                    mediaBox.innerHTML =
+                      "";
+
+
+                    resolve();
+
+
+                  },
+
+                  250
+
+                );
+
+
+              },
+
+              5000
+
+            );
+
+
+            return;
+
+          }
+
+
+
+          // ==============================
+          // VIDEO MEME
+          // ==============================
+
+
+          const video =
+
+            document.createElement(
+              "video"
+            );
+
+
+          video.src =
+            memeFile;
+
+
+          video.autoplay =
+            true;
+
+
+          video.playsInline =
+            true;
+
+
+          video.loop =
+            false;
+
+
+          video.id =
+            "m";
+
+
+          mediaBox.appendChild(
+            video
           );
 
 
-        image.src =
-          memeFile;
+
+          requestAnimationFrame(
+
+            () => {
 
 
-        image.id =
-          "m";
+              video
+
+                .classList
+
+                .add(
+                  "show"
+                );
+
+            }
+
+          );
 
 
-        mediaBox.appendChild(
-          image
-        );
+
+          let finished =
+            false;
 
 
-        requestAnimationFrame(
-          () => {
 
-            image
+          function finishVideo() {
+
+
+            if (
+              finished
+            ) {
+
+              return;
+
+            }
+
+
+            finished =
+              true;
+
+
+
+            try {
+
+              video.pause();
+
+            }
+
+            catch (e) {}
+
+
+
+            video
+
               .classList
-              .add(
-                "show"
-              );
 
-          }
-        );
-
-
-
-        setTimeout(
-          () => {
-
-
-            image
-              .classList
               .remove(
                 "show"
               );
 
 
+
             setTimeout(
+
               () => {
 
 
@@ -699,434 +1056,284 @@ function showMeme(
               },
 
               250
+
             );
 
-
-          },
-
-          5000
-        );
-
-
-        return;
-
-      }
+          }
 
 
 
-      // ==============================
-      // VIDEO
-      // ==============================
-
-      const video =
-
-        document.createElement(
-          "video"
-        );
+          video.onended =
+            finishVideo;
 
 
-      video.src =
-        memeFile;
-
-
-      video.autoplay =
-        true;
-
-
-      video.playsInline =
-        true;
-
-
-      video.loop =
-        false;
-
-
-      video.id =
-        "m";
-
-
-      mediaBox.appendChild(
-        video
-      );
-
-
-      requestAnimationFrame(
-        () => {
-
-          video
-            .classList
-            .add(
-              "show"
-            );
-
-        }
-      );
+          video.onerror =
+            finishVideo;
 
 
 
-      let finished =
-        false;
+          setTimeout(
 
+            finishVideo,
 
+            15000
 
-      function finishVideo() {
-
-
-        if (
-          finished
-        ) {
-
-          return;
-
-        }
-
-
-        finished =
-          true;
-
-
-        try {
-
-          video.pause();
-
-        }
-
-        catch (e) {}
-
-
-        video
-          .classList
-          .remove(
-            "show"
           );
 
 
-        setTimeout(
-          () => {
+
+          video
+            .play()
+
+            .catch(
+              finishVideo
+            );
+
+        }
+
+      );
+
+    }
 
 
-            mediaBox.innerHTML =
-              "";
+
+    // =====================================
+    // PLAY ONE COMPLETE ALERT
+    // =====================================
 
 
-            resolve();
+    async function playAlert(
+      data
+    ) {
 
 
-          },
+      const viewerName =
 
-          250
+        String(
+
+          data.name ||
+          "Viewer"
+
+        )
+
+          .trim();
+
+
+
+      const viewerMessage =
+
+        String(
+
+          data.message ||
+          ""
+
+        )
+
+          .trim();
+
+
+
+      const amount =
+
+        Number(
+
+          data.amount ||
+          0
+
+        );
+
+
+
+      // =================================
+      // SHOW TEXT ON OBS
+      // =================================
+
+
+      nameBox.textContent =
+        viewerName;
+
+
+      messageBox.textContent =
+        viewerMessage;
+
+
+      amountBox.textContent =
+
+        amount > 0
+
+          ? "₹" +
+            amount
+
+          : "";
+
+
+
+      alertBox
+
+        .classList
+
+        .add(
+          "show"
+        );
+
+
+
+      // =================================
+      // CREATE TTS SENTENCE
+      // =================================
+
+
+      let voiceText =
+        viewerName;
+
+
+
+      if (
+        amount > 0
+      ) {
+
+
+        voiceText +=
+
+          " sent "
+
+          +
+
+          amount
+
+          +
+
+          " rupees.";
+
+
+      }
+
+      else {
+
+
+        voiceText +=
+
+          " sent a message.";
+
+      }
+
+
+
+      if (
+        viewerMessage
+      ) {
+
+
+        voiceText +=
+
+          " "
+
+          +
+
+          viewerMessage;
+
+      }
+
+
+
+      /*
+        FINAL ALERT ORDER
+
+        1. NAME + AMOUNT + MESSAGE READ
+
+        2. SOUNDBOARD
+
+        3. MEME / GIF / VIDEO
+
+        4. NEXT VIEWER
+      */
+
+
+
+      // =================================
+      // STEP 1 - READ MESSAGE
+      // =================================
+
+
+      await speak(
+        voiceText
+      );
+
+
+
+      // =================================
+      // STEP 2 - SOUNDBOARD
+      // =================================
+
+
+      if (
+        data.soundFile
+      ) {
+
+
+        await playSound(
+
+          data.soundFile
+
         );
 
       }
 
 
 
-      video.onended =
-        finishVideo;
+      // =================================
+      // STEP 3 - MEME
+      // =================================
 
 
-      video.onerror =
-        finishVideo;
+      if (
+        data.memeFile
+      ) {
 
 
+        await showMeme(
 
-      setTimeout(
-        finishVideo,
-        12000
-      );
+          data.memeFile
 
-
-
-      video
-        .play()
-        .catch(
-          finishVideo
         );
 
-    }
-  );
+      }
 
-}
 
 
+      // =================================
+      // TEXT ONLY ALERT EXTRA DISPLAY
+      // =================================
 
-// ======================================
-// ONE COMPLETE ALERT
-// ======================================
 
-async function playAlert(
-  data
-) {
+      if (
 
+        !data.soundFile
 
-  const viewerName =
+        &&
 
-    String(
-      data.name ||
-      "Viewer"
-    )
+        !data.memeFile
 
-      .trim();
+      ) {
 
 
+        await wait(
+          900
+        );
 
-  const viewerMessage =
+      }
 
-    String(
-      data.message ||
-      ""
-    )
 
-      .trim();
 
-
-
-  const amount =
-
-    Number(
-      data.amount ||
-      0
-    );
-
-
-
-  // ==============================
-  // SHOW ALERT
-  // ==============================
-
-  nameBox.textContent =
-    viewerName;
-
-
-  messageBox.textContent =
-    viewerMessage;
-
-
-  amountBox.textContent =
-
-    amount > 0
-
-      ? "₹" + amount
-
-      : "";
-
-
-  alertBox
-    .classList
-    .add(
-      "show"
-    );
-
-
-
-  // ==============================
-  // CREATE SUPERCHAT VOICE
-  // ==============================
-
-  let voiceText =
-    viewerName;
-
-
-
-  if (
-    amount > 0
-  ) {
-
-
-    voiceText +=
-
-      " sent "
-
-      +
-
-      amount
-
-      +
-
-      " rupees.";
-
-
-  }
-
-  else {
-
-
-    voiceText +=
-
-      " sent a message.";
-
-  }
-
-
-
-  if (
-    viewerMessage
-  ) {
-
-
-    voiceText +=
-
-      " "
-
-      +
-
-      viewerMessage;
-
-  }
-
-
-
-  /*
-     FINAL ORDER
-
-     1. TEXT READ
-     2. SOUNDBOARD
-     3. MEME
-     4. NEXT VIEWER
-  */
-
-
-
-  // ==============================
-  // 1. TEXT READ
-  // ==============================
-
-  await speak(
-    voiceText
-  );
-
-
-
-  // ==============================
-  // 2. SOUNDBOARD
-  // ==============================
-
-  if (
-    data.soundFile
-  ) {
-
-
-    await playSound(
-      data.soundFile
-    );
-
-  }
-
-
-
-  // ==============================
-  // 3. MEME
-  // ==============================
-
-  if (
-    data.memeFile
-  ) {
-
-
-    await showMeme(
-      data.memeFile
-    );
-
-  }
-
-
-
-  // Text-only alert
-
-  if (
-
-    !data.soundFile
-
-    &&
-
-    !data.memeFile
-
-  ) {
-
-
-    await wait(
-      900
-    );
-
-  }
-
-
-
-  alertBox
-    .classList
-    .remove(
-      "show"
-    );
-
-
-  mediaBox.innerHTML =
-    "";
-
-
-  // Small gap between alerts
-
-  await wait(
-    400
-  );
-
-}
-
-
-
-// ======================================
-// QUEUE
-// ======================================
-
-async function runQueue() {
-
-
-  if (
-    busy
-  ) {
-
-    return;
-
-  }
-
-
-  busy =
-    true;
-
-
-
-  while (
-    alertQueue.length >
-    0
-  ) {
-
-
-    const nextAlert =
-
-      alertQueue.shift();
-
-
-
-    try {
-
-
-      await playAlert(
-        nextAlert
-      );
-
-
-    }
-
-    catch (error) {
-
-
-      console.error(
-        "Alert error:",
-        error
-      );
+      // =================================
+      // HIDE CURRENT ALERT
+      // =================================
 
 
       alertBox
+
         .classList
+
         .remove(
           "show"
         );
@@ -1136,75 +1343,164 @@ async function runQueue() {
         "";
 
 
+
+      // gap before next viewer
+
       await wait(
-        300
+        400
       );
 
     }
 
-  }
+
+
+    // =====================================
+    // QUEUE PROCESSOR
+    // =====================================
+
+
+    async function runQueue() {
+
+
+      if (
+        busy
+      ) {
+
+        return;
+
+      }
+
+
+      busy =
+        true;
 
 
 
-  busy =
-    false;
+      while (
 
-}
+        alertQueue.length >
+        0
 
-
-
-// ======================================
-// RECEIVE FROM SERVER
-// ======================================
-
-socket.on(
-
-  "show-alert",
-
-  function(data) {
+      ) {
 
 
-    if (!data) {
+        const nextAlert =
 
-      return;
+          alertQueue.shift();
+
+
+
+        try {
+
+
+          await playAlert(
+
+            nextAlert
+
+          );
+
+
+        }
+
+        catch (
+          error
+        ) {
+
+
+          console.error(
+
+            "Alert error:",
+
+            error
+
+          );
+
+
+          alertBox
+
+            .classList
+
+            .remove(
+              "show"
+            );
+
+
+          mediaBox.innerHTML =
+            "";
+
+
+          await wait(
+            300
+          );
+
+        }
+
+      }
+
+
+
+      busy =
+        false;
 
     }
 
 
-    if (
 
-      data.creatorSlug !==
-      slug
-
-    ) {
-
-      return;
-
-    }
+    // =====================================
+    // RECEIVE ALERT FROM SERVER
+    // =====================================
 
 
+    socket.on(
 
-    /*
-      ALERT DIRECTLY PLAY
-      NAHI HOGA.
+      "show-alert",
 
-      PEHLE QUEUE MEIN.
-    */
+      data => {
 
 
-    alertQueue.push(
-      data
+        if (
+          !data
+        ) {
+
+          return;
+
+        }
+
+
+        if (
+
+          data.creatorSlug !==
+          slug
+
+        ) {
+
+          return;
+
+        }
+
+
+
+        /*
+          NEVER PLAY DIRECTLY.
+
+          EVERY ALERT FIRST GOES
+          INTO THE QUEUE.
+        */
+
+
+        alertQueue.push(
+          data
+        );
+
+
+        runQueue();
+
+      }
+
     );
 
 
-    runQueue();
-
-  }
-
-);
-
-
-</script>
+  </script>
 
 
 </body>
